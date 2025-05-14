@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Nhà cung cấp</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .main-content {
+            margin-left: 260px;
+            max-width: 1000px;
+            min-height: 100vh;
+            padding: 36px 24px 24px 24px;
+        }
+        @media (max-width: 900px) {
+            .main-content { margin-left: 0; max-width: 98vw; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <img src="https://upload.wikimedia.org/wikipedia/vi/2/2e/Logo_HUTECH.png" alt="HUTECH">
+            SINH VIÊN HUTECH
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">&#8962; Trang chủ</a></li>
+                <li><a href="profile.html">&#128100; Hồ sơ cá nhân</a></li>
+                <li><a href="lop.html">&#128218; Lớp học</a></li>
+                <li><a href="nhiemvu.html">&#128221; Nhiệm vụ</a></li>
+                <li><a href="cansu.html">&#128101; Cán sự</a></li>
+                <li><a href="thongbao.html">&#128276; Thông báo</a></li>
+                <li><a href="ncc.html" class="active">&#128230; Nhà cung cấp</a></li>
+                <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="main-content">
+        <h2>Danh sách Nhà cung cấp</h2>
+        <form id="nccForm" style="max-width:700px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;">
+            <input type="hidden" id="nccId">
+            <input type="text" id="TenNCC" placeholder="Tên nhà cung cấp" required style="flex:2;">
+            <input type="text" id="DiaChi" placeholder="Địa chỉ" required style="flex:2;">
+            <input type="text" id="SoDienThoai" placeholder="Số điện thoại" required style="flex:1;">
+            <input type="text" id="Email" placeholder="Email" style="flex:1;">
+            <button type="submit" id="btnLuuNCC">Thêm mới</button>
+            <button type="button" id="btnHuyNCC" style="display:none;">Hủy</button>
+        </form>
+        <ul id="nccList"></ul>
+    </div>
+    <script src="script/ncc.js"></script>
+</body>
+</html>

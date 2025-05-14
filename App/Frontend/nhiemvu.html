@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Nhiệm vụ</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .main-content {
+            margin-left: 260px;
+            max-width: 1000px;
+            min-height: 100vh;
+            padding: 36px 24px 24px 24px;
+        }
+        @media (max-width: 900px) {
+            .main-content { margin-left: 0; max-width: 98vw; padding: 10px; }
+        }
+        .sidebar a {
+            gap: 10px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo" style="padding:0;">
+            <img src="https://startupwheel.vn/wp-content/uploads/2021/04/hutech-university-logo.jpg" alt="HUTECH" style="width:100%;height:auto;display:block;">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">&#8962; Trang chủ</a></li>
+                <li><a href="profile.html">&#128100; Hồ sơ cá nhân</a></li>
+                <li><a href="lop.html">&#128218; Lớp học</a></li>
+                <li><a href="nhiemvu.html" class="active">&#128221; Nhiệm vụ</a></li>
+                <li><a href="cansu.html">&#128101; Cán sự</a></li>
+                <li><a href="thongbao.html">&#128276; Thông báo</a></li>
+                <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="main-content">
+        <h2>Danh sách Nhiệm vụ</h2>
+        <form id="nhiemvuForm" style="max-width:700px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;">
+            <input type="hidden" id="nhiemvuId">
+            <input type="number" id="MaLop" placeholder="ID Lớp" required style="flex:1;">
+            <input type="number" id="NguoiGiao" placeholder="ID Người giao" required style="flex:1;">
+            <input type="text" id="TieuDe" placeholder="Tiêu đề" required style="flex:1;">
+            <input type="text" id="MoTa" placeholder="Mô tả" required style="flex:1;">
+            <input type="datetime-local" id="HanHoanThanh" placeholder="Hạn hoàn thành" required style="flex:1;">
+            <input type="text" id="DoUuTien" placeholder="Độ ưu tiên" required style="flex:1;">
+            <input type="text" id="TepDinhKem" placeholder="Tệp đính kèm" style="flex:1;">
+            <button type="submit" id="btnLuuNV">Thêm mới</button>
+            <button type="button" id="btnHuyNV" style="display:none;">Hủy</button>
+        </form>
+        <ul id="nhiemvuList"></ul>
+    </div>
+    <script src="script/nhiemvu.js"></script>
+</body>
+</html>

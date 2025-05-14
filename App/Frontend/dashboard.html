@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Giảng viên</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #e3f0ff 0%, #f9f9f9 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            width: 260px;
+            background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
+            color: #fff;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            box-shadow: 2px 0 16px rgba(37,99,235,0.08);
+        }
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0;
+            background: #fff;
+            border-bottom: 1px solid #e3e8f0;
+        }
+        .sidebar .logo img {
+            width: 100%;
+            height: auto;
+            display: block;
+            padding: 12px 18px 8px 18px;
+        }
+        .sidebar nav {
+            flex: 1;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li {
+            margin: 0;
+        }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e3e8f0;
+            text-decoration: none;
+            padding: 13px 28px;
+            font-size: 1rem;
+            border-left: 4px solid transparent;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            font-weight: 500;
+        }
+        .sidebar a.active, .sidebar a:hover {
+            background: linear-gradient(90deg, #fff 0%, #e0e7ff 100%);
+            border-left: 4px solid #ffd600;
+            color: #2563eb;
+        }
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+            padding: 0;
+            background: transparent;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%);
+            color: #fff;
+            padding: 36px 0 28px 0;
+            text-align: center;
+            border-radius: 0 0 28px 28px;
+            box-shadow: 0 2px 16px rgba(37,99,235,0.08);
+            margin-top: 32px;
+        }
+        .dashboard-header h1 {
+            font-size: 2.6rem;
+            margin-bottom: 8px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .dashboard-header p {
+            font-size: 1.18rem;
+            margin-bottom: 0;
+            opacity: 0.96;
+        }
+        .dashboard-header .desc {
+            margin-top:24px;
+        }
+        .dashboard-header .desc span {
+            display:inline-block;
+            background:#fff;
+            color:#2563eb;
+            font-weight:600;
+            padding:10px 28px;
+            border-radius:24px;
+            font-size:1.15rem;
+            box-shadow:0 2px 8px rgba(37,99,235,0.07);
+        }
+        #carouselWelcome {
+            max-width: 950px;
+            margin: 36px auto 0 auto;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 2px 24px rgba(37,99,235,0.10);
+        }
+        .carousel-inner img {
+            object-fit: cover;
+            width: 100%;
+            height: 420px;
+            border-radius: 0;
+        }
+        .carousel-caption {
+            background: rgba(37,99,235,0.18);
+            border-radius: 8px;
+            padding: 12px 18px;
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.13);
+        }
+        .dashboard-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            justify-content: center;
+            margin: 40px auto 0 auto;
+            max-width: 1100px;
+        }
+        .dashboard-card {
+            background: linear-gradient(135deg, #fff 60%, #e0e7ff 100%);
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(37,99,235,0.08);
+            padding: 36px 28px 28px 28px;
+            min-width: 260px;
+            max-width: 320px;
+            flex: 1 1 260px;
+            text-align: center;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+            cursor: pointer;
+            border: 1.5px solid #e0e7ff;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-8px) scale(1.04);
+            box-shadow: 0 8px 32px rgba(37,99,235,0.18);
+            background: linear-gradient(135deg, #e0e7ff 60%, #fff 100%);
+            border-color: #2563eb;
+        }
+        .dashboard-card .icon {
+            font-size: 2.7rem;
+            margin-bottom: 14px;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            filter: drop-shadow(0 2px 8px #e0e7ff);
+        }
+        .dashboard-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #1746a0;
+            font-weight: 600;
+        }
+        .dashboard-card p {
+            color: #444;
+            font-size: 1rem;
+            opacity: 0.93;
+        }
+        @media (max-width: 1100px) {
+            #carouselWelcome { max-width: 98vw; }
+            .carousel-inner img { height: 200px; }
+            .dashboard-cards { flex-direction: column; gap: 18px; }
+        }
+        @media (max-width: 900px) {
+            .sidebar { width: 100vw; position: static; min-height: auto; }
+            .main-content { margin-left: 0; }
+            .dashboard-header { margin-top: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <img src="https://startupwheel.vn/wp-content/uploads/2021/04/hutech-university-logo.jpg" alt="HUTECH">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html" class="active">&#8962; Trang chủ</a></li>
+                <li><a href="profile.html">&#128100; Hồ sơ cá nhân</a></li>
+                <li><a href="lop.html">&#128218; Lớp học</a></li>
+                <li><a href="nhiemvu.html">&#128221; Nhiệm vụ</a></li>
+                <li><a href="cansu.html">&#128101; Cán sự</a></li>
+                <li><a href="thongbao.html">&#128276; Thông báo</a></li>
+                <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h1>HỆ THỐNG QUẢN LÝ BAN CÁN SỰ HUTECH</h1>
+            <p>Chào mừng bạn đến với trang quản lý tổng hợp dành cho giảng viên và cán sự lớp.</p>
+            <div class="desc">
+                <span>
+                    Hỗ trợ quản lý lớp học, nhiệm vụ, cán sự, thông báo và hồ sơ cá nhân một cách dễ dàng, hiện đại và bảo mật.
+                </span>
+            </div>
+        </div>
+        <div id="carouselWelcome" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselWelcome" data-bs-slide-to="0" class="active"></button>
+                <button type="button" data-bs-target="#carouselWelcome" data-bs-slide-to="1"></button>
+                <button type="button" data-bs-target="#carouselWelcome" data-bs-slide-to="2"></button>
+            </div>
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="https://file1.hutech.edu.vn/file/slider/9694691736999828.jpg" class="d-block w-100" alt="HUTECH">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>Chào mừng đến với hệ thống quản lí ban cán sự HUTECH</h5>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <img src="https://file1.hutech.edu.vn/file/slider/7968111696498843.jpg" class="d-block w-100" alt="Welcome">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>Học tập - Sáng tạo - Hội nhập</h5>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <img src="https://file1.hutech.edu.vn/file/slider/8742621741055887.jpg" class="d-block w-100" alt="HUTECH Banner">
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>HUTECH - Đại học Công nghệ TP.HCM</h5>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselWelcome" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselWelcome" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+        <div class="dashboard-cards">
+            <div class="dashboard-card" onclick="location.href='lop.html'">
+                <div class="icon"><i class="fa-solid fa-users-rectangle"></i></div>
+                <h3>Lớp học</h3>
+                <p>Quản lý danh sách lớp học, thông tin lớp, giáo viên chủ nhiệm.</p>
+            </div>
+            <div class="dashboard-card" onclick="location.href='nhiemvu.html'">
+                <div class="icon"><i class="fa-solid fa-list-check"></i></div>
+                <h3>Nhiệm vụ</h3>
+                <p>Giao, theo dõi và cập nhật tiến độ các nhiệm vụ của lớp.</p>
+            </div>
+            <div class="dashboard-card" onclick="location.href='cansu.html'">
+                <div class="icon"><i class="fa-solid fa-user-tie"></i></div>
+                <h3>Cán sự</h3>
+                <p>Quản lý cán sự, phân công chức vụ, đánh giá hoạt động.</p>
+            </div>
+            <div class="dashboard-card" onclick="location.href='thongbao.html'">
+                <div class="icon"><i class="fa-solid fa-bell"></i></div>
+                <h3>Thông báo</h3>
+                <p>Gửi và xem các thông báo quan trọng đến lớp học.</p>
+            </div>
+            <div class="dashboard-card" onclick="location.href='profile.html'">
+                <div class="icon"><i class="fa-solid fa-user"></i></div>
+                <h3>Hồ sơ cá nhân</h3>
+                <p>Xem và cập nhật thông tin cá nhân, đổi mật khẩu.</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

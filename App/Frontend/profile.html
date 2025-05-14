@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang cá nhân</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .main-content {
+            margin-left: 260px;
+            max-width: 1000px;
+            min-height: 100vh;
+            padding: 36px 24px 24px 24px;
+        }
+        @media (max-width: 900px) {
+            .main-content { margin-left: 0; max-width: 98vw; padding: 10px; }
+        }
+        .sidebar a {
+            gap: 10px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo" style="padding:0;">
+            <img src="https://startupwheel.vn/wp-content/uploads/2021/04/hutech-university-logo.jpg" alt="HUTECH" style="width:100%;height:auto;display:block;">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">&#8962; Trang chủ</a></li>
+                <li><a href="profile.html" class="active">&#128100; Hồ sơ cá nhân</a></li>
+                <li><a href="lop.html">&#128218; Lớp học</a></li>
+                <li><a href="nhiemvu.html">&#128221; Nhiệm vụ</a></li>
+                <li><a href="cansu.html">&#128101; Cán sự</a></li>
+                <li><a href="thongbao.html">&#128276; Thông báo</a></li>
+                <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="main-content">
+        <h2>Trang cá nhân</h2>
+        <div id="profileInfo"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const container = document.getElementById('profileInfo');
+            if (user && container) {
+                container.innerHTML = `
+                    <p><b>Mã số:</b> ${user.username}</p>
+                    <p><b>Họ tên:</b> ${user.name}</p>
+                    <p><b>Vai trò:</b> ${user.role}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
