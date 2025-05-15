@@ -53,18 +53,39 @@
             <table style="width:100%;border-collapse:collapse;">
                 <thead>
                     <tr style="background:#2563eb;color:#fff;">
+                        <th style="padding:8px;">ID lớp</th>
                         <th style="padding:8px;">Mã lớp học</th>
                         <th style="padding:8px;">Tên lớp</th>
                         <th style="padding:8px;">Chuyên ngành</th>
                         <th style="padding:8px;">Khóa học</th>
-                        <th style="padding:8px;">ID Giáo viên</th>
+                        <th style="padding:8px;">Tên giáo viên</th>
                         <th style="padding:8px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody id="lopList"></tbody>
             </table>
         </div>
+        <!-- Modal xem thành viên lớp -->
+        <div id="modalThanhVienLop" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999;background:rgba(0,0,0,0.18);align-items:center;justify-content:center;">
+            <div style="background:#fff;max-width:480px;width:96vw;padding:24px 18px 18px 18px;border-radius:12px;box-shadow:0 2px 16px #2563eb33;position:relative;">
+                <button onclick="document.getElementById('modalThanhVienLop').style.display='none'" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:1.5em;color:#888;cursor:pointer;">&times;</button>
+                <h3 style="margin-top:0;color:#2563eb;">Danh sách thành viên lớp</h3>
+                <div id="modalTVLopContent" style="max-height:350px;overflow:auto;"></div>
+            </div>
+        </div>
     </div>
     <script src="script/lop.js"></script>
+    <script>
+    // Xử lý click vào từng dòng để xem thành viên lớp
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('lopList').onclick = function(e) {
+            let tr = e.target.closest('tr[data-malop]');
+            if (tr) {
+                let maLop = tr.getAttribute('data-malop');
+                window.showThanhVienLop(maLop);
+            }
+        };
+    });
+    </script>
 </body>
 </html>

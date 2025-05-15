@@ -39,3 +39,11 @@ exports.deleteLop = (req, res) => {
         res.json({ success: true });
     });
 };
+
+// API lấy danh sách thành viên lớp
+exports.getAllThanhVienLop = (req, res) => {
+    db.query('SELECT * FROM ThanhVienLop', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp' });
+        res.json(results);
+    });
+};

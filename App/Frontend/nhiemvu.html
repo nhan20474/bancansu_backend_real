@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Danh sách Nhiệm vụ</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .main-content {
             margin-left: 260px;
@@ -38,21 +39,42 @@
         </nav>
     </div>
     <div class="main-content">
-        <h2>Danh sách Nhiệm vụ</h2>
+        <h2><i class="fa-solid fa-list-check"></i> Danh sách Nhiệm vụ</h2>
         <form id="nhiemvuForm" style="max-width:700px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;">
             <input type="hidden" id="nhiemvuId">
             <input type="number" id="MaLop" placeholder="ID Lớp" required style="flex:1;">
-            <input type="number" id="NguoiGiao" placeholder="ID Người giao" required style="flex:1;">
             <input type="text" id="TieuDe" placeholder="Tiêu đề" required style="flex:1;">
             <input type="text" id="MoTa" placeholder="Mô tả" required style="flex:1;">
             <input type="datetime-local" id="HanHoanThanh" placeholder="Hạn hoàn thành" required style="flex:1;">
-            <input type="text" id="DoUuTien" placeholder="Độ ưu tiên" required style="flex:1;">
+            <select id="DoUuTien" required style="flex:1;">
+                <option value="">-- Độ ưu tiên --</option>
+                <option value="Cao">Cao</option>
+                <option value="Trung bình">Trung bình</option>
+            </select>
             <input type="text" id="TepDinhKem" placeholder="Tệp đính kèm" style="flex:1;">
             <button type="submit" id="btnLuuNV">Thêm mới</button>
-            <button type="button" id="btnHuyNV" style="display:none;">Hủy</button>
+            <button type="button" id="btnHuyNV" style="display:none;"><i class="fa-solid fa-xmark"></i> Hủy</button>
         </form>
-        <ul id="nhiemvuList"></ul>
+        <div style="max-width:900px;margin:0 auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#2563eb;color:#fff;">
+                        <th style="padding:8px;">ID nhiệm vụ</th>
+                        <th style="padding:8px;">Lớp</th>
+                        <th style="padding:8px;">Tiêu đề</th>
+                        <th style="padding:8px;">Mô tả</th>
+                        <th style="padding:8px;">Hạn hoàn thành</th>
+                        <th style="padding:8px;">Tên người giao</th>
+                        <th style="padding:8px;">Độ ưu tiên</th>
+                        <th style="padding:8px;">Tệp đính kèm</th>
+                        <th style="padding:8px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="nhiemvuList"></tbody>
+            </table>
+        </div>
     </div>
+    <script src="script/auth.js"></script>
     <script src="script/nhiemvu.js"></script>
 </body>
 </html>

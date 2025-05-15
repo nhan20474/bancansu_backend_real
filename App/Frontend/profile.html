@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Trang cá nhân</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .main-content {
             margin-left: 260px;
@@ -38,19 +39,65 @@
         </nav>
     </div>
     <div class="main-content">
-        <h2>Trang cá nhân</h2>
+        <h2><i class="fa-solid fa-user"></i> Trang cá nhân</h2>
         <div id="profileInfo"></div>
+        <div id="profileLopInfo" style="margin-top:32px;"></div>
     </div>
+    <script src="script/auth.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        if (window.checkRole && !checkRole(['giangvien', 'cansu', 'sinhvien'])) {
+            if (typeof showToast === 'function') showToast('Bạn không có quyền truy cập vào trang này!', 'error');
+            else alert('Bạn không có quyền truy cập vào trang này!');
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
             const user = JSON.parse(localStorage.getItem('user'));
             const container = document.getElementById('profileInfo');
             if (user && container) {
                 container.innerHTML = `
-                    <p><b>Mã số:</b> ${user.username}</p>
-                    <p><b>Họ tên:</b> ${user.name}</p>
-                    <p><b>Vai trò:</b> ${user.role}</p>
+                    <p><i class="fa-solid fa-id-card"></i> <b>ID người dùng:</b> ${user.MaNguoiDung !== undefined ? user.MaNguoiDung : ''}</p>
+                    <p><i class="fa-solid fa-user-tag"></i> <b>Mã số:</b> ${user.username || user.MaSoSV || ''}</p>
+                    <p><i class="fa-solid fa-signature"></i> <b>Họ tên:</b> ${user.name || user.HoTen || ''}</p>
+                    <p><i class="fa-solid fa-user-shield"></i> <b>Vai trò:</b> ${user.role || user.VaiTro || ''}</p>
+                    ${user.Email ? `<p><i class="fa-solid fa-envelope"></i> <b>Email:</b> ${user.Email}</p>` : ''}
+                    ${user.SoDienThoai ? `<p><i class="fa-solid fa-phone"></i> <b>Số điện thoại:</b> ${user.SoDienThoai}</p>` : ''}
                 `;
+            }
+
+            // Hiển thị lớp đang học (sinh viên) hoặc lớp đang dạy (giảng viên)
+            const lopDiv = document.getElementById('profileLopInfo');
+            if (!user || !lopDiv) return;
+
+            // Lấy danh sách lớp
+            let dsLop = [];
+            try {
+                const resLop = await fetch('http://localhost:3000/api/lop');
+                dsLop = await resLop.json();
+            } catch {}
+
+            if (user.role === 'giangvien' || user.VaiTro === 'giangvien') {
+                // Lớp đang dạy
+                const lopDay = dsLop.filter(l => String(l.GiaoVien) === String(user.MaNguoiDung));
+                lopDiv.innerHTML = `<h3><i class="fa-solid fa-chalkboard-teacher"></i> Lớp đang dạy:</h3>` +
+                    (lopDay.length > 0
+                        ? `<ul>${lopDay.map(l => `<li>${l.TenLop} (${l.MaLopHoc})</li>`).join('')}</ul>`
+                        : `<span style="color:#888;">Không phụ trách lớp nào</span>`);
+            } else if (user.role === 'sinhvien' || user.VaiTro === 'sinhvien') {
+                // Lớp đang học
+                let dsTVLop = [];
+                try {
+                    const resTVLop = await fetch('http://localhost:3000/api/lop/thanhvienlop');
+                    dsTVLop = await resTVLop.json();
+                } catch {}
+                const myLopIds = dsTVLop
+                    .filter(tv => String(tv.MaNguoiDung) === String(user.MaNguoiDung))
+                    .map(tv => tv.MaLop);
+                const lopHoc = dsLop.filter(l => myLopIds.includes(l.MaLop));
+                lopDiv.innerHTML = `<h3><i class="fa-solid fa-users-rectangle"></i> Lớp đang học:</h3>` +
+                    (lopHoc.length > 0
+                        ? `<ul>${lopHoc.map(l => `<li>${l.TenLop} (${l.MaLopHoc})</li>`).join('')}</ul>`
+                        : `<span style="color:#888;">Không thuộc lớp nào</span>`);
             }
         });
     </script>

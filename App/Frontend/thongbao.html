@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Danh sách Thông báo</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .main-content {
             margin-left: 260px;
@@ -38,19 +39,19 @@
         </nav>
     </div>
     <div class="main-content">
-        <h2>Danh sách Thông báo</h2>
+        <h2><i class="fa-solid fa-bell"></i> Danh sách Thông báo</h2>
         <form id="thongbaoForm" style="max-width:700px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;">
             <input type="hidden" id="thongbaoId">
             <input type="number" id="MaLop" placeholder="ID Lớp" required style="flex:1;">
-            <input type="number" id="NguoiGui" placeholder="ID Người gửi" required style="flex:1;">
             <input type="text" id="TieuDe" placeholder="Tiêu đề" required style="flex:1;">
             <input type="text" id="NoiDung" placeholder="Nội dung" required style="flex:2;">
             <input type="text" id="TepDinhKem" placeholder="Tệp đính kèm" style="flex:1;">
             <button type="submit" id="btnLuuTB">Thêm mới</button>
-            <button type="button" id="btnHuyTB" style="display:none;">Hủy</button>
+            <button type="button" id="btnHuyTB" style="display:none;"><i class="fa-solid fa-xmark"></i> Hủy</button>
         </form>
         <ul id="thongbaoList"></ul>
     </div>
+    <script src="script/auth.js"></script>
     <script src="script/thongbao.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function() {
@@ -65,6 +66,12 @@
         const dsNguoi = await resNguoi.json();
         const datalistNguoi = document.getElementById('datalistNguoiGui');
         datalistNguoi.innerHTML = dsNguoi.map(u => `<option value="${u.MaNguoiDung}">${u.HoTen}</option>`).join('');
+
+        // Thêm thông báo toast khi không đủ quyền truy cập
+        if (!localStorage.getItem('userRole') || localStorage.getItem('userRole') !== 'admin') {
+            alert('Bạn không có quyền truy cập vào trang này!');
+            window.location.href = 'dashboard.html';
+        }
     });
     </script>
 </body>

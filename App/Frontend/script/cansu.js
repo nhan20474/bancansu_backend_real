@@ -1,20 +1,3 @@
-function showToast(msg, type = 'success') {
-    let toast = document.createElement('div');
-    toast.innerText = msg;
-    toast.style.position = 'fixed';
-    toast.style.top = '24px';
-    toast.style.right = '24px';
-    toast.style.zIndex = 9999;
-    toast.style.background = type === 'success' ? '#22c55e' : '#ef4444';
-    toast.style.color = '#fff';
-    toast.style.padding = '12px 28px';
-    toast.style.borderRadius = '8px';
-    toast.style.fontWeight = 'bold';
-    toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-}
-
 async function loadCanSu() {
     const res = await fetch('http://localhost:3000/api/cansu');
     const data = await res.json();
@@ -40,24 +23,72 @@ async function loadCanSu() {
         return u ? u.HoTen : '';
     };
 
+    // Datalist cho MaLop
+    const maLopInput = document.getElementById('MaLop');
+    let datalistLop = document.getElementById('datalistLop');
+    if (!datalistLop) {
+        datalistLop = document.createElement('datalist');
+        datalistLop.id = 'datalistLop';
+        document.body.appendChild(datalistLop);
+    }
+    datalistLop.innerHTML = dsLop.map(l => `<option value="${l.MaLop}">${l.TenLop} (${l.MaLopHoc})</option>`).join('');
+    if (maLopInput) maLopInput.setAttribute('list', 'datalistLop');
+    if (maLopInput) {
+        maLopInput.addEventListener('change', function () {
+            const val = this.value;
+            if (val && !dsLop.some(l => String(l.MaLop) === String(val))) {
+                showToast('Chỉ được chọn ID của lớp hợp lệ!', 'error');
+                this.value = '';
+            }
+        });
+    }
+
+    // Datalist cho MaNguoiDung là cán sự
+    const dsCanSu = dsNguoi.filter(u => u.VaiTro === 'cansu' || u.role === 'cansu');
+    const canSuNguoiDungInput = document.getElementById('MaNguoiDung');
+    let datalistCanSuNguoiDung = document.getElementById('datalistCanSuNguoiDung');
+    if (!datalistCanSuNguoiDung) {
+        datalistCanSuNguoiDung = document.createElement('datalist');
+        datalistCanSuNguoiDung.id = 'datalistCanSuNguoiDung';
+        document.body.appendChild(datalistCanSuNguoiDung);
+    }
+    datalistCanSuNguoiDung.innerHTML = dsCanSu.map(cs => `<option value="${cs.MaNguoiDung}">${cs.HoTen} (${cs.MaSoSV})</option>`).join('');
+    if (canSuNguoiDungInput) canSuNguoiDungInput.setAttribute('list', 'datalistCanSuNguoiDung');
+    if (canSuNguoiDungInput) {
+        canSuNguoiDungInput.addEventListener('change', function () {
+            const val = this.value;
+            if (val && !dsCanSu.some(cs => String(cs.MaNguoiDung) === String(val))) {
+                showToast('Chỉ được chọn ID của cán sự!', 'error');
+                this.value = '';
+            }
+        });
+    }
+
     const container = document.getElementById('cansuList');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isGV = user && user.role === 'giangvien';
     if (container) {
         container.innerHTML = data.map(cs => {
-            // Nếu bảng CanSu có trường NguoiTao, dùng cs.NguoiTao, nếu không thì bỏ qua
             let nguoiTaoStr = '';
             if (cs.NguoiTao) {
-                nguoiTaoStr = `<span style="color:#2563eb;">(Thêm bởi: [${cs.NguoiTao}] ${getTenNguoi(cs.NguoiTao)})</span>`;
+                nguoiTaoStr = `<span style="color:#2563eb;"><i class="fa-solid fa-user-plus"></i> (Thêm bởi: [${cs.NguoiTao}] ${getTenNguoi(cs.NguoiTao)})</span>`;
             }
-            return `<li>
-                <b>Lớp:</b> [${cs.MaLop}] ${getTenLop(cs.MaLop)} 
-                <b>Người dùng:</b> [${cs.MaNguoiDung}] ${getTenNguoi(cs.MaNguoiDung)} 
-                <b>Chức vụ:</b> ${cs.ChucVu} 
-                <b>Từ:</b> ${cs.TuNgay || ''} 
-                <b>Đến:</b> ${cs.DenNgay || ''}
-                ${nguoiTaoStr}
-                <button onclick="editCanSu(${cs.MaCanSu},${cs.MaLop},${cs.MaNguoiDung},'${cs.ChucVu.replace(/'/g, "\\'") || ''}','${cs.TuNgay ? cs.TuNgay.slice(0,10) : ''}','${cs.DenNgay ? cs.DenNgay.slice(0,10) : ''}')">Sửa</button>
-                <button onclick="deleteCanSu(${cs.MaCanSu})">Xóa</button>
-            </li>`;
+            // Hiển thị rõ ID và tên người dùng
+            return `<tr>
+                <td>${cs.MaCanSu || ''}</td>
+                <td>[${cs.MaLop}] ${getTenLop(cs.MaLop)}</td>
+                <td>[${cs.MaNguoiDung}] ${getTenNguoi(cs.MaNguoiDung)}</td>
+                <td>${cs.ChucVu || ''}</td>
+                <td>${cs.TuNgay || ''}</td>
+                <td>${cs.DenNgay || ''}</td>
+                <td>
+                    ${isGV ? `
+                    <button type="button" onclick="editCanSu(${cs.MaCanSu},${cs.MaLop},${cs.MaNguoiDung},'${cs.ChucVu?.replace(/'/g, "\\'") || ''}','${cs.TuNgay ? cs.TuNgay.slice(0,10) : ''}','${cs.DenNgay ? cs.DenNgay.slice(0,10) : ''}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button type="button" onclick="deleteCanSu(${cs.MaCanSu})"><i class="fa-solid fa-trash"></i></button>
+                    ` : ''}
+                    ${nguoiTaoStr}
+                </td>
+            </tr>`;
         }).join('');
     }
 }
@@ -83,44 +114,64 @@ window.deleteCanSu = async function(id) {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (window.checkRole && !checkRole(['giangvien', 'cansu', 'sinhvien'])) return;
+
     loadCanSu();
 
-    document.getElementById('cansuForm').onsubmit = async function(e) {
-        e.preventDefault();
-        const id = document.getElementById('cansuId').value;
-        const MaLop = document.getElementById('MaLop').value;
-        const MaNguoiDung = document.getElementById('MaNguoiDung').value;
-        const ChucVu = document.getElementById('ChucVu').value;
-        const TuNgay = document.getElementById('TuNgay').value;
-        const DenNgay = document.getElementById('DenNgay').value;
-        const payload = { MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay: DenNgay || null };
+    // Chỉ cho phép giảng viên thao tác thêm/sửa/xóa
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isGV = user && user.role === 'giangvien';
+    if (!isGV) {
+        document.getElementById('cansuForm').style.display = 'none';
+        // Ẩn nút sửa/xóa nếu muốn (hoặc xử lý trong render)
+    }
 
-        let res;
-        if (id) {
-            res = await fetch(`http://localhost:3000/api/cansu/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            res = await fetch('http://localhost:3000/api/cansu', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        }
-        if (res.ok) showToast(id ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
-        else showToast('Thao tác thất bại!', 'error');
-        this.reset();
-        document.getElementById('btnLuuCS').innerText = 'Thêm mới';
-        document.getElementById('btnHuyCS').style.display = 'none';
-        loadCanSu();
-    };
+    if (isGV) {
+        document.getElementById('cansuForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('cansuId').value;
+            const MaLop = document.getElementById('MaLop').value;
+            const MaNguoiDung = document.getElementById('MaNguoiDung').value;
+            const ChucVu = document.getElementById('ChucVu').value;
+            const TuNgay = document.getElementById('TuNgay').value;
+            const DenNgay = document.getElementById('DenNgay').value;
+            // Chỉ cho phép giảng viên thêm mới
+            if (!isGV && !id) {
+                showToast('Chỉ giảng viên mới được thêm ban cán sự!', 'error');
+                return;
+            }
+            // Khi thêm mới, truyền NguoiTao là giảng viên đang đăng nhập
+            let payload = { MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay: DenNgay || null };
+            if (!id) {
+                payload.NguoiTao = user.MaNguoiDung;
+            }
+            let res;
+            if (id) {
+                res = await fetch(`http://localhost:3000/api/cansu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch('http://localhost:3000/api/cansu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+            if (res.ok) showToast(id ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
+            else showToast('Thao tác thất bại!', 'error');
+            this.reset();
+            document.getElementById('btnLuuCS').innerText = 'Thêm mới';
+            document.getElementById('btnHuyCS').style.display = 'none';
+            loadCanSu();
+        };
 
-    document.getElementById('btnHuyCS').onclick = function() {
-        document.getElementById('cansuForm').reset();
-        document.getElementById('cansuId').value = '';
-        document.getElementById('btnLuuCS').innerText = 'Thêm mới';
-        this.style.display = 'none';
-    };
-});
+        document.getElementById('btnHuyCS').onclick = function() {
+            document.getElementById('cansuForm').reset();
+            document.getElementById('cansuId').value = '';
+            document.getElementById('btnLuuCS').innerText = 'Thêm mới';
+            this.style.display = 'none';
+        };
+    }
+}       );

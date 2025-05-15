@@ -8,10 +8,10 @@ exports.getAllCanSu = (req, res) => {
 };
 
 exports.createCanSu = (req, res) => {
-    const { MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay } = req.body;
+    const { MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay, NguoiTao } = req.body;
     db.query(
-        'INSERT INTO CanSu (MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay) VALUES (?, ?, ?, ?, ?)',
-        [MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay],
+        'INSERT INTO CanSu (MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay, NguoiTao) VALUES (?, ?, ?, ?, ?, ?)',
+        [MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay, NguoiTao],
         (err, result) => {
             if (err) return res.status(500).json({ message: 'Lỗi thêm cán sự' });
             res.json({ success: true, id: result.insertId });

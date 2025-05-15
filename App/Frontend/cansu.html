@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Danh sách Cán sự</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .main-content {
             margin-left: 260px;
@@ -38,11 +39,11 @@
         </nav>
     </div>
     <div class="main-content">
-        <h2>Danh sách Cán sự</h2>
+        <h2><i class="fa-solid fa-user-tie"></i> Danh sách Cán sự</h2>
         <form id="cansuForm" style="max-width:700px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;">
             <input type="hidden" id="cansuId">
-            <input type="number" id="MaLop" placeholder="ID Lớp" required style="flex:1;">
-            <input type="number" id="MaNguoiDung" placeholder="ID Người dùng" required style="flex:1;">
+            <input type="number" id="MaLop" placeholder="ID Lớp" required style="flex:1;" list="datalistLop">
+            <input type="number" id="MaNguoiDung" placeholder="ID Ban Cán Sự" required style="flex:1;" list="datalistCanSuNguoiDung">
             <select id="ChucVu" required style="flex:1;">
                 <option value="">-- Chọn chức vụ --</option>
                 <option value="Lớp trưởng">Lớp trưởng</option>
@@ -53,10 +54,26 @@
             <input type="date" id="TuNgay" placeholder="Từ ngày" required style="flex:1;">
             <input type="date" id="DenNgay" placeholder="Đến ngày" style="flex:1;">
             <button type="submit" id="btnLuuCS">Thêm mới</button>
-            <button type="button" id="btnHuyCS" style="display:none;">Hủy</button>
+            <button type="button" id="btnHuyCS" style="display:none;"><i class="fa-solid fa-xmark"></i> Hủy</button>
+            <datalist id="datalistLop"></datalist>
+            <datalist id="datalistCanSuNguoiDung"></datalist>
         </form>
-        <ul id="cansuList"></ul>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="background:#2563eb;color:#fff;">
+                    <th style="padding:8px;">ID cán sự</th>
+                    <th style="padding:8px;">Lớp</th>
+                    <th style="padding:8px;">Tên ban cán sự</th>
+                    <th style="padding:8px;">Chức vụ</th>
+                    <th style="padding:8px;">Từ ngày</th>
+                    <th style="padding:8px;">Đến ngày</th>
+                    <th style="padding:8px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="cansuList"></tbody>
+        </table>
     </div>
+    <script src="script/auth.js"></script>
     <script src="script/cansu.js"></script>
 </body>
 </html>
