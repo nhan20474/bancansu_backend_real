@@ -28,15 +28,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (forgotLink) {
         forgotLink.onclick = async function(e) {
             e.preventDefault();
-            const username = prompt('Nhập tên đăng nhập/MSSV hoặc email để đặt lại mật khẩu:');
-            if (!username) return;
+            const input = prompt('Nhập mã số sinh viên hoặc email để đặt lại mật khẩu:');
+            if (!input) return;
+            const body = input.includes('@') ? { email: input } : { username: input };
             const res = await fetch('http://localhost:3000/api/auth/forgot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username })
+                body: JSON.stringify(body)
             });
             if (res.ok) {
-                showToast('Vui lòng kiểm tra email để nhận hướng dẫn đặt lại mật khẩu!');
+                const data = await res.json();
+                showToast('Vui lòng kiểm tra email để nhận mật khẩu mới!');
+                // Chuyển sang trang đổi mật khẩu, truyền MaNguoiDung nếu cần
+                if (data.MaNguoiDung) {
+                    setTimeout(() => {
+                        window.location.href = 'doimatkhau.html?uid=' + encodeURIComponent(data.MaNguoiDung);
+                    }, 1200);
+                }
             } else {
                 showToast('Không tìm thấy tài khoản hoặc lỗi gửi email!', 'error');
             }
@@ -77,29 +85,4 @@ window.showToast = function(msg, type = 'success') {
     setTimeout(() => toast.remove(), 2000);
 };
 
-/*
-PHÂN QUYỀN CHỨC NĂNG THEO VAI TRÒ:
 
-- Giảng viên (giangvien):
-    + Quản lý lớp học: xem, thêm, sửa, xóa lớp học mình phụ trách.
-    + Quản lý ban cán sự: thêm, sửa, xóa cán sự, xem lịch sử cán sự các học kỳ.
-    + Giao nhiệm vụ cho cán sự, theo dõi tiến độ, đánh giá nhiệm vụ.
-    + Gửi thông báo cho lớp/cán sự.
-    + Xem thống kê, xuất báo cáo, xem đánh giá ẩn danh về cán sự.
-    + Quản lý tài khoản cá nhân.
-
-- Ban cán sự (cansu):
-    + Xem thông tin lớp, danh sách cán sự.
-    + Nhận nhiệm vụ, cập nhật tiến độ, báo cáo hoàn thành nhiệm vụ.
-    + Gửi thông báo cho lớp (nội dung phù hợp).
-    + Xem thống kê nhiệm vụ của bản thân.
-    + Quản lý tài khoản cá nhân.
-
-- Sinh viên thường (sinhvien):
-    + Xem thông tin lớp, danh sách cán sự, thông báo.
-    + Gửi đánh giá ẩn danh cho từng cán sự.
-    + Xem thống kê cá nhân (nếu có).
-    + Quản lý tài khoản cá nhân.
-
-=> Khi vào từng trang, dùng checkRole(['giangvien']), checkRole(['giangvien','cansu']), checkRole(['giangvien','cansu','sinhvien'])... để kiểm soát quyền.
-*/

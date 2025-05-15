@@ -34,23 +34,32 @@
                 <li><a href="nhiemvu.html">&#128221; Nhiệm vụ</a></li>
                 <li><a href="cansu.html">&#128101; Cán sự</a></li>
                 <li><a href="thongbao.html">&#128276; Thông báo</a></li>
-                <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li>
+                <!-- <li><a href="index.html" onclick="localStorage.clear()">&#128682; Đăng xuất</a></li> -->
             </ul>
         </nav>
     </div>
     <div class="main-content">
         <h2><i class="fa-solid fa-user"></i> Trang cá nhân</h2>
         <div id="profileInfo"></div>
+        <div style="text-align:center;margin-bottom:24px;">
+            <a href="doimatkhau.html" style="color:#2563eb;text-decoration:underline;font-weight:500;margin-right:18px;">
+                <i class="fa-solid fa-key"></i> Đổi mật khẩu
+            </a>
+            <a href="#" id="forgotPasswordLink" style="color:#888;text-decoration:underline;font-size:0.98em;">
+              
+            </a>
+            <a href="#" id="logoutBtn" style="color:#e53935;text-decoration:underline;font-size:0.98em;margin-left:18px;">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+            </a>
+        </div>
+        <div id="changePassError" style="color:#e53935;text-align:center;margin-top:8px;">
+          
+        </div>
         <div id="profileLopInfo" style="margin-top:32px;"></div>
     </div>
     <script src="script/auth.js"></script>
     <script>
-        if (window.checkRole && !checkRole(['giangvien', 'cansu', 'sinhvien'])) {
-            if (typeof showToast === 'function') showToast('Bạn không có quyền truy cập vào trang này!', 'error');
-            else alert('Bạn không có quyền truy cập vào trang này!');
-        }
-    </script>
-    <script>
+        // Ai cũng truy cập được trang này, không kiểm tra quyền
         document.addEventListener('DOMContentLoaded', async function() {
             const user = JSON.parse(localStorage.getItem('user'));
             const container = document.getElementById('profileInfo');
@@ -98,6 +107,42 @@
                     (lopHoc.length > 0
                         ? `<ul>${lopHoc.map(l => `<li>${l.TenLop} (${l.MaLopHoc})</li>`).join('')}</ul>`
                         : `<span style="color:#888;">Không thuộc lớp nào</span>`);
+            }
+        });
+
+        // Xử lý nút "Quên mật khẩu?"
+        document.addEventListener('DOMContentLoaded', function() {
+            var forgot = document.getElementById('forgotPasswordLink');
+            if (forgot) {
+                forgot.onclick = async function(e) {
+                    e.preventDefault();
+                    const input = prompt('Nhập mã số sinh viên hoặc email để đặt lại mật khẩu:');
+                    if (!input) return;
+                    const body = input.includes('@') ? { email: input } : { username: input };
+                    const res = await fetch('http://localhost:3000/api/auth/forgot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        showToast('Vui lòng kiểm tra email để nhận mật khẩu mới!');
+                    } else {
+                        showToast('Không tìm thấy tài khoản hoặc lỗi gửi email!', 'error');
+                    }
+                };
+            }
+        });
+
+        // Xử lý nút "Đăng xuất"
+        document.addEventListener('DOMContentLoaded', function() {
+            var logout = document.getElementById('logoutBtn');
+            if (logout) {
+                logout.onclick = function(e) {
+                    e.preventDefault();
+                    localStorage.clear();
+                    window.location.href = 'index.html';
+                };
             }
         });
     </script>

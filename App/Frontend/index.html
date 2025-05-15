@@ -10,7 +10,7 @@
     <div class="login-container">
         <h2><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập hệ thống</h2>
         <form id="loginForm">
-            <input type="text" id="username" placeholder="Tên đăng nhập/MSSV" required>
+            <input type="text" id="username" placeholder="Mã số sinh viên" required>
             <input type="password" id="password" placeholder="Mật khẩu" required>
             <button type="submit">Đăng nhập</button>
         </form>
@@ -18,7 +18,41 @@
         <div style="margin-top:10px;text-align:center;">
             <a href="#" id="forgotPasswordLink" style="color:#2563eb;text-decoration:underline;cursor:pointer;">Quên mật khẩu?</a>
         </div>
+        <div style="margin-top:10px;text-align:center;">
+            
+        </div>
     </div>
     <script src="script/auth.js"></script>
+    <script>
+    // Cho phép nhập cả mã số sinh viên hoặc email khi quên mật khẩu
+    document.addEventListener('DOMContentLoaded', function() {
+        var forgot = document.getElementById('forgotPasswordLink');
+        if (forgot) {
+            forgot.onclick = async function(e) {
+                e.preventDefault();
+                const input = prompt('Nhập mã số sinh viên để đặt lại mật khẩu:');
+                if (!input) return;
+                const body = input.includes('@') ? { email: input } : { username: input };
+                const res = await fetch('http://localhost:3000/api/auth/forgot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    showToast('Vui lòng kiểm tra email để nhận mật khẩu mới!');
+                } else {
+                    let msg = 'Không tìm thấy tài khoản hoặc lỗi gửi email!';
+                    try {
+                        const data = await res.json();
+                        if (data && data.message && data.message.includes('email')) {
+                            msg = 'Tài khoản này chưa có email hoặc email không hợp lệ!';
+                        }
+                    } catch {}
+                    showToast(msg, 'error');
+                }
+            };
+        }
+    });
+    </script>
 </body>
 </html>
