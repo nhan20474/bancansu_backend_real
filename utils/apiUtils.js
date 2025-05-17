@@ -124,7 +124,7 @@ const api = {
   },
 
   /**
-   * Lấy danh sách lớp học
+   * Lấy danh sách lớp học (trả về cả mã giáo viên và tên giáo viên chủ nhiệm)
    * @returns {Promise} Danh sách lớp học
    */
   async layDanhSachLopHoc() {
@@ -135,15 +135,20 @@ const api = {
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
+      let data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Không thể lấy danh sách lớp học');
       }
+      // Không loại bỏ trường TenGiaoVien, giữ nguyên dữ liệu backend trả về
       return data;
     } catch (error) {
       console.error('Lỗi lấy danh sách lớp học:', error);
       throw error;
     }
+  },
+
+  async themLopHoc(data) {
+    // ...existing code...
   },
 
   /**
@@ -188,6 +193,42 @@ const api = {
       return data;
     } catch (error) {
       console.error('Lỗi lấy danh sách thông báo:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách giáo viên (chỉ những người có VaiTro là 'giangvien')
+   * @returns {Promise<Array>} Danh sách giáo viên [{ MaNguoiDung, HoTen, Email, ... }]
+   *
+   * Cách sử dụng:
+   *   api.layDanhSachGiaoVien().then(ds => console.log(ds));
+   */
+  async layDanhSachGiaoVien() {
+    try {
+      // Gọi API backend trả về danh sách tất cả người dùng
+      const response = await fetch(`${BASE_URL}/auth/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      let data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể lấy danh sách giáo viên');
+      }
+      // Lọc chỉ lấy những người có VaiTro (hoặc role) là 'giangvien'
+      const giaoVienList = data.filter(
+        u => (u.VaiTro && u.VaiTro.toLowerCase() === 'giangvien') ||
+             (u.role && u.role.toLowerCase() === 'giangvien')
+      );
+      // Nếu không có giáo viên nào, log cảnh báo
+      if (giaoVienList.length === 0) {
+        console.warn('Không tìm thấy giáo viên nào trong danh sách người dùng!');
+      }
+      return giaoVienList;
+    } catch (error) {
+      console.error('Lỗi lấy danh sách giáo viên:', error);
       throw error;
     }
   },

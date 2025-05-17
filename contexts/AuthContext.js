@@ -19,6 +19,14 @@ export const AuthProvider = ({ children }) => {
 
         if (isLoggedIn && userId && userInfo) {
           const userData = JSON.parse(userInfo);
+          // Đảm bảo có userId
+          const realUserId = userData.userId || userData.MaNguoiDung;
+          if (!realUserId) {
+            setError('Thiếu userId trong dữ liệu người dùng. Vui lòng đăng nhập lại.');
+            setUser(null);
+            setLoading(false);
+            return;
+          }
           
           // Xác thực lại với server để đảm bảo thông tin còn hiệu lực
           try {
@@ -35,8 +43,10 @@ export const AuthProvider = ({ children }) => {
               // Cập nhật dữ liệu người dùng
               setUser({
                 ...userData,
-                ...updatedUserData
+                ...updatedUserData,
+                userId: realUserId
               });
+              console.log('User khi khởi tạo:', { ...userData, userId: realUserId });
             } else {
               // Nếu không xác thực được, đăng xuất
               console.log('Phiên đăng nhập hết hạn');
@@ -49,7 +59,8 @@ export const AuthProvider = ({ children }) => {
           } catch (err) {
             // Nếu có lỗi kết nối, vẫn sử dụng dữ liệu từ localStorage
             console.warn('Không thể xác thực với server, sử dụng dữ liệu cục bộ');
-            setUser(userData);
+            setUser({ ...userData, userId: realUserId });
+            console.log('User khi khởi tạo:', { ...userData, userId: realUserId });
           }
         } else {
           // Nếu không có dữ liệu đăng nhập
@@ -86,16 +97,24 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok) {
         throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
       }
-      
+
+      // Đảm bảo có userId
+      const userId = data.userId || data.MaNguoiDung;
+      if (!userId) {
+        throw new Error('Đăng nhập thành công nhưng thiếu userId từ backend!');
+      }
+
       // Lưu thông tin vào localStorage
       localStorage.setItem('userInfo', JSON.stringify(data));
-      localStorage.setItem('userId', data.userId || data.MaNguoiDung);
+      localStorage.setItem('userId', userId);
       localStorage.setItem('isLoggedIn', 'true');
       
       // Cập nhật context
-      setUser(data);
+      const userObj = { ...data, userId };
+      setUser(userObj);
+      console.log('User sau khi login:', userObj);
       
-      return { success: true, user: data };
+      return { success: true, user: userObj };
     } catch (err) {
       setError(err.message);
       return { success: false, error: err.message };
