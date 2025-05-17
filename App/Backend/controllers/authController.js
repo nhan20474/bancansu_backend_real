@@ -3,19 +3,29 @@ const nodemailer = require('nodemailer');
 
 exports.login = (req, res) => {
     const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
+    }
+    
     // Truy vấn theo MaSoSV (username) và MatKhau
     db.query(
         'SELECT MaNguoiDung, MaSoSV as username, VaiTro as role, HoTen as name, Email, SoDienThoai FROM NguoiDung WHERE MaSoSV = ? AND MatKhau = ? AND TrangThai = 1',
         [username, password],
         (err, results) => {
             if (err) {
-                return res.status(500).json({ message: 'Lỗi máy chủ' });
+                console.error('Database error:', err);
+                return res.status(500).json({ message: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
             }
             if (results.length === 0) {
-                return res.status(401).json({ message: 'Sai tên đăng nhập hoặc mật khẩu' });
+                return res.status(401).json({ message: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
             }
-            // Trả về thông tin cơ bản và vai trò
+            // Trả về thông tin người dùng
             const user = results[0];
+            
+            // Thêm trường userId để dễ dàng sử dụng
+            user.userId = user.MaNguoiDung;
+            
             res.json(user);
         }
     );
@@ -129,6 +139,90 @@ exports.changePassword = (req, res) => {
                     res.json({ success: true });
                 }
             );
+        }
+    );
+};
+
+// Lấy thông tin profile người dùng (dùng cho /api/auth/profile hoặc /api/user/profile)
+exports.getUserProfile = (req, res) => {
+    // Ưu tiên lấy userId từ query, sau đó header, cuối cùng là params
+    const userId = req.query.userId || req.headers['user-id'] || req.params.id;
+    if (!userId) {
+        return res.status(400).json({ message: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.' });
+    }
+    db.query(
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        [userId],
+        (err, results) => {
+            if (err) {
+                console.error('Lỗi database:', err);
+                return res.status(500).json({ message: 'Lỗi khi tải thông tin người dùng' });
+            }
+            if (results.length === 0) {
+                return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+            }
+            res.json(results[0]);
+        }
+    );
+};
+
+// Lấy thông tin profile người dùng hiện tại (từ session/token)
+exports.getCurrentUserProfile = (req, res) => {
+    // Trong thực tế, bạn sẽ lấy id người dùng từ token xác thực
+    // Ở đây, để demo, chúng ta sẽ lấy từ query parameter hoặc sử dụng id mặc định
+    const userId = req.query.userId || req.headers['user-id'];
+    
+    if (!userId) {
+        return res.status(400).json({ 
+            message: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.'
+        });
+    }
+    
+    db.query(
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        [userId],
+        (err, results) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ message: 'Lỗi khi tải thông tin người dùng' });
+            }
+            
+            if (results.length === 0) {
+                return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+            }
+            
+            res.json(results[0]);
+        }
+    );
+};
+
+// Thêm route lấy thông tin người dùng hiện tại
+exports.getCurrentUser = (req, res) => {
+    const userId = req.query.userId || req.headers['user-id'];
+    
+    if (!userId) {
+        console.log('Không có userId được cung cấp');
+        return res.status(400).json({ message: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.' });
+    }
+    
+    console.log('Đang tìm người dùng với userId:', userId);
+    
+    db.query(
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        [userId],
+        (err, results) => {
+            if (err) {
+                console.error('Lỗi database:', err);
+                return res.status(500).json({ message: 'Lỗi server khi tải thông tin người dùng.' });
+            }
+            
+            if (results.length === 0) {
+                console.log('Không tìm thấy người dùng với userId:', userId);
+                return res.status(404).json({ message: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.' });
+            }
+            
+            console.log('Đã tìm thấy người dùng:', results[0].HoTen);
+            res.json(results[0]);
         }
     );
 };

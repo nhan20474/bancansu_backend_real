@@ -177,6 +177,12 @@ FROM CanSu cs
 JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
 JOIN LopHoc l ON cs.MaLop = l.MaLop;
 
+-- Kiểm tra danh sách ban cán sự (lấy đầy đủ thông tin cán sự, lớp, người dùng)
+SELECT cs.MaCanSu, cs.MaLop, l.TenLop, cs.MaNguoiDung, nd.HoTen, cs.ChucVu, cs.TuNgay, cs.DenNgay
+FROM CanSu cs
+JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+JOIN LopHoc l ON cs.MaLop = l.MaLop;
+
 -- 4. Kiểm tra nhiệm vụ và người giao
 SELECT nv.*, nd.HoTen AS NguoiGiaoHoTen, l.TenLop
 FROM NhiemVu nv
