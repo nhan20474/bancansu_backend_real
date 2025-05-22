@@ -10,7 +10,7 @@ exports.login = (req, res) => {
     
     // Truy vấn theo MaSoSV (username) và MatKhau
     db.query(
-        'SELECT MaNguoiDung, MaSoSV as username, VaiTro as role, HoTen as name, Email, SoDienThoai FROM NguoiDung WHERE MaSoSV = ? AND MatKhau = ? AND TrangThai = 1',
+        'SELECT MaNguoiDung, MaSoSV as username, VaiTro as role, HoTen as name, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE MaSoSV = ? AND MatKhau = ? AND TrangThai = 1',
         [username, password],
         (err, results) => {
             if (err) {
@@ -32,7 +32,7 @@ exports.login = (req, res) => {
 };
 
 exports.getAllUsers = (req, res) => {
-    db.query('SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE TrangThai=1', (err, results) => {
+    db.query('SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE TrangThai=1', (err, results) => {
         if (err) return res.status(500).json({ message: 'Lỗi máy chủ' });
         res.json(results);
     });
@@ -151,7 +151,7 @@ exports.getUserProfile = (req, res) => {
         return res.status(400).json({ message: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.' });
     }
     db.query(
-        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
         [userId],
         (err, results) => {
             if (err) {
@@ -179,7 +179,7 @@ exports.getCurrentUserProfile = (req, res) => {
     }
     
     db.query(
-        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
         [userId],
         (err, results) => {
             if (err) {
@@ -208,7 +208,7 @@ exports.getCurrentUser = (req, res) => {
     console.log('Đang tìm người dùng với userId:', userId);
     
     db.query(
-        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
+        'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE MaNguoiDung = ? AND TrangThai = 1',
         [userId],
         (err, results) => {
             if (err) {

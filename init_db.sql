@@ -9,9 +9,10 @@ CREATE TABLE NguoiDung (
     MaSoSV VARCHAR(20) UNIQUE NOT NULL,
     HoTen NVARCHAR(100) NOT NULL,
     MatKhau VARCHAR(255) NOT NULL,
-    VaiTro ENUM('giangvien','cansu','sinhvien') NOT NULL,
+    VaiTro ENUM('admin','giangvien','cansu','sinhvien') NOT NULL,
     Email VARCHAR(100),
     SoDienThoai VARCHAR(15),
+    HinhAnh VARCHAR(255), -- Thêm trường hình ảnh
     TrangThai BOOLEAN DEFAULT 1
 );
 
@@ -85,6 +86,7 @@ CREATE TABLE ThongBao (
     NoiDung NVARCHAR(1000),
     ThoiGianGui DATETIME DEFAULT CURRENT_TIMESTAMP,
     TepDinhKem VARCHAR(255),
+    AnhDinhKem VARCHAR(255), -- Thêm trường ảnh đính kèm
     FOREIGN KEY (MaLop) REFERENCES LopHoc(MaLop),
     FOREIGN KEY (NguoiGui) REFERENCES NguoiDung(MaNguoiDung)
 );
@@ -126,10 +128,11 @@ SET FOREIGN_KEY_CHECKS=1;
 -- DỮ LIỆU MẪU
 
 -- Người dùng mẫu
-INSERT INTO NguoiDung (MaSoSV, HoTen, MatKhau, VaiTro, Email, SoDienThoai, TrangThai) VALUES
-('gv001', N'GV Nguyễn Văn A', '123456', 'giangvien', 'gv001@hutech.edu.vn', '0123456789', 1),
-('cs001', N'CS Trần Thị B', '123456', 'cansu', 'cs001@hutech.edu.vn', '0987654321', 1),
-('sv001', N'SV Lê Văn C', '123456', 'sinhvien', 'sv001@hutech.edu.vn', '0111222333', 1);
+INSERT INTO NguoiDung (MaSoSV, HoTen, MatKhau, VaiTro, Email, SoDienThoai, HinhAnh, TrangThai) VALUES
+('admin01', N'Quản trị viên', 'admin123', 'admin', 'admin@hutech.edu.vn', '0999999999', NULL, 1),
+('gv001', N'GV Nguyễn Văn A', '123456', 'giangvien', 'gv001@hutech.edu.vn', '0123456789', NULL, 1),
+('cs001', N'CS Trần Thị B', '123456', 'cansu', 'cs001@hutech.edu.vn', '0987654321', NULL, 1),
+('sv001', N'SV Lê Văn C', '123456', 'sinhvien', 'sv001@hutech.edu.vn', '0111222333', NULL, 1);
 
 -- Lớp học mẫu
 INSERT INTO LopHoc (MaLopHoc, TenLop, ChuyenNganh, KhoaHoc, GiaoVien) VALUES

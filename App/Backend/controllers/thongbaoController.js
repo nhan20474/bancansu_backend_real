@@ -12,7 +12,8 @@ exports.getAllThongBao = (req, res) => {
             tb.TieuDe,
             tb.NoiDung,
             tb.ThoiGianGui,
-            tb.TepDinhKem
+            tb.TepDinhKem,
+            tb.AnhDinhKem
         FROM ThongBao tb
         LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
         LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
@@ -28,7 +29,8 @@ exports.getAllThongBao = (req, res) => {
             TieuDe: row.TieuDe,
             NoiDung: row.NoiDung,
             ThoiGianGui: row.ThoiGianGui,
-            TepDinhKem: row.TepDinhKem
+            TepDinhKem: row.TepDinhKem ? `/uploads/${row.TepDinhKem}` : null,
+            AnhDinhKem: row.AnhDinhKem ? `/uploads/${row.AnhDinhKem}` : null
         }));
         res.json(data);
     });

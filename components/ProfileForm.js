@@ -13,7 +13,8 @@ const ProfileForm = () => {
   const [formData, setFormData] = useState({
     HoTen: '',
     Email: '',
-    SoDienThoai: ''
+    SoDienThoai: '',
+    HinhAnh: ''
   });
 
   useEffect(() => {
@@ -24,14 +25,16 @@ const ProfileForm = () => {
         HoTen: user.name || user.HoTen || '',
         VaiTro: user.role || user.VaiTro,
         Email: user.Email || '',
-        SoDienThoai: user.SoDienThoai || ''
+        SoDienThoai: user.SoDienThoai || '',
+        HinhAnh: user.HinhAnh || ''
       };
       
       setProfile(currentData);
       setFormData({
         HoTen: currentData.HoTen || '',
         Email: currentData.Email || '',
-        SoDienThoai: currentData.SoDienThoai || ''
+        SoDienThoai: currentData.SoDienThoai || '',
+        HinhAnh: currentData.HinhAnh || ''
       });
       
       // Tải dữ liệu profile từ server (nếu cần)
@@ -80,7 +83,8 @@ const ProfileForm = () => {
       setFormData({
         HoTen: data.HoTen || '',
         Email: data.Email || '',
-        SoDienThoai: data.SoDienThoai || ''
+        SoDienThoai: data.SoDienThoai || '',
+        HinhAnh: data.HinhAnh || ''
       });
     } catch (error) {
       console.error('Lỗi khi tải profile từ server:', error);
@@ -91,11 +95,47 @@ const ProfileForm = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    const { name, value, files } = e.target;
+    if (name === 'HinhAnh' && files && files[0]) {
+      // Xử lý upload ảnh (giả lập: chỉ lấy tên file)
+      setFormData({
+        ...formData,
+        HinhAnh: files[0].name
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formDataUpload = new FormData();
+    formDataUpload.append('avatar', file);
+    // Gửi kèm userId để backend cập nhật luôn vào DB
+    formDataUpload.append('userId', user?.userId || user?.MaNguoiDung || '');
+
+    try {
+      const res = await fetch('/api/user/upload-avatar', {
+        method: 'POST',
+        body: formDataUpload
+      });
+      const data = await res.json();
+      if (data.filename) {
+        setFormData(prev => ({
+          ...prev,
+          HinhAnh: data.filename
+        }));
+        // Cập nhật luôn profile để hiển thị ảnh mới ngay
+        setProfile(prev => prev ? { ...prev, HinhAnh: data.filename } : prev);
+      }
+    } catch (err) {
+      // Xử lý lỗi upload
+      setError('Lỗi upload ảnh đại diện');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -223,6 +263,50 @@ const ProfileForm = () => {
             onChange={handleChange}
             disabled={!isEditing}
             className="form-control"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Ảnh đại diện:</label>
+          {formData.HinhAnh && (
+            <div className="profile-avatar-preview">
+              <img
+                src={
+                  formData.HinhAnh.startsWith('http')
+                    ? formData.HinhAnh
+                    : `http://localhost:8080/uploads/${formData.HinhAnh.split('/').pop().split('\\').pop()}`
+                }
+                alt="avatar"
+                width={64}
+                height={64}
+              />
+            </div>
+          )}
+          <input
+            type="file"
+            name="HinhAnh"
+            accept="image/*"
+            onChange={handleImageChange}
+            disabled={!isEditing}
+            className="form-control"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label>Ảnh đại diện:</label>
+          <img
+            src={
+              profile.HinhAnh
+                ? (profile.HinhAnh.startsWith('http') || profile.HinhAnh.startsWith('/uploads/'))
+                  ? (profile.HinhAnh.startsWith('http')
+                      ? profile.HinhAnh
+                      : `http://localhost:8080${profile.HinhAnh}`)
+                  : `http://localhost:8080/uploads/${profile.HinhAnh.split('/').pop().split('\\').pop()}`
+                : '/default-avatar.png'
+            }
+            alt="avatar"
+            width={64}
+            height={64}
           />
         </div>
         

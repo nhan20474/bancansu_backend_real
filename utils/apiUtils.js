@@ -79,6 +79,7 @@ const api = {
         console.error('Lỗi lấy profile:', data, 'userId gửi đi:', uid);
         throw new Error(data.message || 'Không thể lấy thông tin profile');
       }
+      // data có thể có HinhAnh, VaiTro (admin)
       return data;
     } catch (error) {
       console.error('Lỗi cuối cùng khi lấy profile:', error);
