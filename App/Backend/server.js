@@ -15,6 +15,7 @@ const userRoutes = require('./routes/userRoutes');
 const forgotPasswordRoutes = require('./routes/forgotPasswordRoutes');
 const changePasswordRoutes = require('./routes/changePasswordRoutes');
 const chitietnhiemvuRoutes = require('./routes/chitietnhiemvuRoutes');
+const thongkeRoutes = require('./routes/thongkeRoutes');
 
 const app = express();
 app.use(cors());
@@ -48,6 +49,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/forgot-password', forgotPasswordRoutes);
 app.use('/api/change-password', changePasswordRoutes);
 app.use('/api/chitietnhiemvu', chitietnhiemvuRoutes);
+app.use('/api/thongke', thongkeRoutes);
 
 // Danh sách lớp
 app.get('/api/lop/all', (req, res) => {

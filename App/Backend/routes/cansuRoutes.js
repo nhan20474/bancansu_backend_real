@@ -30,31 +30,43 @@ router.post('/', (req, res) => {
     if (!MaLop || !MaNguoiDung || !ChucVu) {
         return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
     }
+    // Đầu tiên cập nhật VaiTro của người dùng thành 'cansu' nếu chưa phải là 'cansu'
+    const db = require('../config/db');
     db.query(
-        'INSERT INTO CanSu (MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay) VALUES (?, ?, ?, ?, ?)',
-        [MaLop, MaNguoiDung, ChucVu, TuNgay || null, DenNgay || null],
-        (err, result) => {
-            if (err) return res.status(500).json({ message: 'Lỗi thêm cán sự', error: err.message });
-            // Lấy lại bản ghi vừa thêm kèm tên lớp và tên người dùng
-            const sql = `
-                SELECT 
-                    cs.MaCanSu,
-                    cs.MaLop,
-                    lh.TenLop,
-                    cs.MaNguoiDung,
-                    nd.HoTen AS TenCanSu,
-                    cs.ChucVu,
-                    cs.TuNgay,
-                    cs.DenNgay
-                FROM CanSu cs
-                LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
-                LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
-                WHERE cs.MaCanSu = ?
-            `;
-            db.query(sql, [result.insertId], (err2, rows) => {
-                if (err2) return res.status(500).json({ message: 'Lỗi truy vấn sau khi thêm', error: err2.message });
-                res.json(rows[0]);
-            });
+        "UPDATE NguoiDung SET VaiTro='cansu' WHERE MaNguoiDung=? AND VaiTro!='cansu'",
+        [MaNguoiDung],
+        (errUpdate) => {
+            if (errUpdate) {
+                return res.status(500).json({ message: 'Lỗi cập nhật VaiTro người dùng', error: errUpdate.message });
+            }
+            // Sau khi cập nhật VaiTro, thêm vào bảng CanSu
+            db.query(
+                'INSERT INTO CanSu (MaLop, MaNguoiDung, ChucVu, TuNgay, DenNgay) VALUES (?, ?, ?, ?, ?)',
+                [MaLop, MaNguoiDung, ChucVu, TuNgay || null, DenNgay || null],
+                (err, result) => {
+                    if (err) return res.status(500).json({ message: 'Lỗi thêm cán sự', error: err.message });
+                    // Lấy lại bản ghi vừa thêm kèm tên lớp và tên người dùng
+                    const sql = `
+                        SELECT 
+                            cs.MaCanSu,
+                            cs.MaLop,
+                            lh.TenLop,
+                            cs.MaNguoiDung,
+                            nd.HoTen AS TenCanSu,
+                            cs.ChucVu,
+                            cs.TuNgay,
+                            cs.DenNgay
+                        FROM CanSu cs
+                        LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+                        LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+                        WHERE cs.MaCanSu = ?
+                    `;
+                    db.query(sql, [result.insertId], (err2, rows) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn sau khi thêm', error: err2.message });
+                        res.json(rows[0]);
+                    });
+                }
+            );
         }
     );
 });
@@ -100,10 +112,30 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: 'Thiếu id cán sự' });
-    db.query('DELETE FROM CanSu WHERE MaCanSu=?', [id], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Lỗi xóa cán sự', error: err.message });
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy cán sự để xóa' });
-        res.json({ success: true });
+    // Lấy MaNguoiDung trước khi xóa để cập nhật lại VaiTro
+    db.query('SELECT MaNguoiDung FROM CanSu WHERE MaCanSu=?', [id], (errFind, rows) => {
+        if (errFind) return res.status(500).json({ message: 'Lỗi truy vấn cán sự', error: errFind.message });
+        if (!rows || rows.length === 0) return res.status(404).json({ message: 'Không tìm thấy cán sự để xóa' });
+        const maNguoiDung = rows[0].MaNguoiDung;
+        // Xóa cán sự
+        db.query('DELETE FROM CanSu WHERE MaCanSu=?', [id], (err, result) => {
+            if (err) return res.status(500).json({ message: 'Lỗi xóa cán sự', error: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy cán sự để xóa' });
+            // Kiểm tra xem người này còn là cán sự ở lớp nào khác không
+            db.query('SELECT COUNT(*) AS cnt FROM CanSu WHERE MaNguoiDung=?', [maNguoiDung], (err2, rows2) => {
+                if (err2) return res.status(500).json({ message: 'Lỗi kiểm tra VaiTro', error: err2.message });
+                if (rows2[0].cnt === 0) {
+                    // Nếu không còn là cán sự ở lớp nào, cập nhật lại VaiTro thành 'sinhvien'
+                    db.query("UPDATE NguoiDung SET VaiTro='sinhvien' WHERE MaNguoiDung=?", [maNguoiDung], (err3) => {
+                        if (err3) return res.status(500).json({ message: 'Lỗi cập nhật VaiTro', error: err3.message });
+                        return res.json({ success: true, updatedRole: 'sinhvien' });
+                    });
+                } else {
+                    // Vẫn còn là cán sự ở lớp khác, không đổi VaiTro
+                    return res.json({ success: true, updatedRole: 'cansu' });
+                }
+            });
+        });
     });
 });
 

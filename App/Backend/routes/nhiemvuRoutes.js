@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const multer = require('multer');
 const path = require('path');
-const uploadDir = path.resolve(__dirname, '../../../uploads');
+const uploadDir = path.resolve(__dirname, '../../uploads');
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, uploadDir);
@@ -167,6 +167,69 @@ router.delete('/:id', (req, res) => {
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy nhiệm vụ để xóa' });
         res.json({ success: true });
     });
+});
+
+// Xem chi tiết các thành viên thực hiện nhiệm vụ của một nhiệm vụ cụ thể
+router.get('/:id/chitiet', (req, res) => {
+    const db = require('../config/db');
+    const maNhiemVu = req.params.id;
+    if (!maNhiemVu) {
+        return res.status(400).json({ message: 'Thiếu mã nhiệm vụ' });
+    }
+    db.query(
+        `SELECT ctnv.MaChiTietNhiemVu, ctnv.MaNhiemVu, ctnv.MaNguoiDung, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, ctnv.TrangThai, ctnv.GhiChuTienDo, ctnv.TepKetQua, ctnv.NgayCapNhat
+         FROM ChiTietNhiemVu ctnv
+         LEFT JOIN NguoiDung nd ON ctnv.MaNguoiDung = nd.MaNguoiDung
+         WHERE ctnv.MaNhiemVu = ?
+         ORDER BY ctnv.NgayCapNhat DESC`,
+        [maNhiemVu],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn chi tiết nhiệm vụ', error: err.message });
+            if (!Array.isArray(results)) return res.json([]);
+            res.json(results);
+        }
+    );
+});
+
+// Nộp bài cho nhiệm vụ (POST /api/nhiemvu/:id/nopbai)
+router.post('/:id/nopbai', upload.single('TepNop'), (req, res) => {
+    const maNhiemVu = req.params.id;
+    const { MaNguoiDung, GhiChu, TrangThai } = req.body;
+    // Lấy tên file nộp bài nếu có
+    const TepKetQua = req.file ? req.file.filename : (req.body.TepKetQua || null);
+    if (!maNhiemVu || !MaNguoiDung) {
+        return res.status(400).json({ message: 'Thiếu mã nhiệm vụ hoặc mã người dùng' });
+    }
+    // Nếu đã có chi tiết nhiệm vụ thì cập nhật, chưa có thì tạo mới
+    const db = require('../config/db');
+    db.query(
+        'SELECT * FROM ChiTietNhiemVu WHERE MaNhiemVu=? AND MaNguoiDung=?',
+        [maNhiemVu, MaNguoiDung],
+        (err, rows) => {
+            if (err) return res.status(500).json({ message: 'Lỗi kiểm tra chi tiết nhiệm vụ', error: err.message });
+            if (rows && rows.length > 0) {
+                // Đã tồn tại, cập nhật
+                db.query(
+                    'UPDATE ChiTietNhiemVu SET TepKetQua=?, GhiChuTienDo=?, TrangThai=?, NgayCapNhat=NOW() WHERE MaNhiemVu=? AND MaNguoiDung=?',
+                    [TepKetQua || null, GhiChu || '', TrangThai || null, maNhiemVu, MaNguoiDung],
+                    (err2) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi cập nhật nộp bài', error: err2.message });
+                        res.json({ success: true, updated: true, TepKetQua });
+                    }
+                );
+            } else {
+                // Chưa có, tạo mới
+                db.query(
+                    'INSERT INTO ChiTietNhiemVu (MaNhiemVu, MaNguoiDung, TepKetQua, GhiChuTienDo, TrangThai) VALUES (?, ?, ?, ?, ?)',
+                    [maNhiemVu, MaNguoiDung, TepKetQua || null, GhiChu || '', TrangThai || null],
+                    (err3) => {
+                        if (err3) return res.status(500).json({ message: 'Lỗi nộp bài', error: err3.message });
+                        res.json({ success: true, created: true, TepKetQua });
+                    }
+                );
+            }
+        }
+    );
 });
 
 module.exports = router;

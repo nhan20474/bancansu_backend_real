@@ -51,4 +51,29 @@ router.post('/', async (req, res) => {
 router.put('/:id', lopController.updateLop);
 router.delete('/:id', lopController.deleteLop);
 
+// Xem chi tiết các thành viên học ở một lớp
+router.get('/:id/thanhvien', (req, res) => {
+    const db = require('../config/db');
+    const maLop = req.params.id;
+    if (!maLop) {
+        return res.status(400).json({ message: 'Thiếu mã lớp' });
+    }
+    db.query(
+        `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+         FROM ThanhVienLop tvl
+         JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+         WHERE tvl.MaLop = ?
+         ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+        [maLop],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err.message });
+            // Đảm bảo luôn trả về mảng (nếu không có thành viên thì trả về [])
+            if (!Array.isArray(results)) {
+                return res.json([]);
+            }
+            res.json(results);
+        }
+    );
+});
+
 module.exports = router;

@@ -161,7 +161,12 @@ exports.getUserProfile = (req, res) => {
             if (results.length === 0) {
                 return res.status(404).json({ message: 'Không tìm thấy người dùng' });
             }
-            res.json(results[0]);
+            // Nếu có HinhAnh, trả về đường dẫn đúng là /uploads/xxx (không phải /App/uploads)
+            const user = results[0];
+            if (user.HinhAnh) {
+                user.HinhAnh = `/uploads/${user.HinhAnh}`;
+            }
+            res.json(user);
         }
     );
 };
@@ -186,12 +191,15 @@ exports.getCurrentUserProfile = (req, res) => {
                 console.error('Database error:', err);
                 return res.status(500).json({ message: 'Lỗi khi tải thông tin người dùng' });
             }
-            
             if (results.length === 0) {
                 return res.status(404).json({ message: 'Không tìm thấy người dùng' });
             }
-            
-            res.json(results[0]);
+            // Nếu có HinhAnh, trả về đường dẫn đúng là /uploads/xxx (không phải /App/uploads)
+            const user = results[0];
+            if (user.HinhAnh) {
+                user.HinhAnh = `/uploads/${user.HinhAnh}`;
+            }
+            res.json(user);
         }
     );
 };

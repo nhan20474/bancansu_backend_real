@@ -7,7 +7,7 @@ const fs = require('fs');
 
 // Đảm bảo đúng đường dẫn uploads, KHÔNG tự tạo thư mục uploads nữa
 // SỬA lại đường dẫn uploads về đúng thư mục gốc dự án
-const uploadDir = path.resolve(__dirname, '../../../uploads');
+const uploadDir = path.resolve(__dirname, '../../uploads');
 console.log('Đường dẫn uploadDir:', uploadDir);
 if (!fs.existsSync(uploadDir)) {
     console.error('Thư mục uploads KHÔNG tồn tại! Vui lòng tạo thủ công ở:', uploadDir);
