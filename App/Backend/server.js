@@ -25,15 +25,11 @@ app.use(express.json());
 
 // Đảm bảo đường dẫn uploads đúng ở gốc dự án (cùng cấp với App, không phải trong App)
 const uploadsPath = path.resolve(__dirname, '../../uploads');
-console.log('Đường dẫn uploads tuyệt đối:', uploadsPath);
 // KHÔNG tự động tạo thư mục uploads nữa, chỉ cảnh báo nếu thiếu
 if (!fs.existsSync(uploadsPath)) {
     console.warn('Thư mục uploads KHÔNG tồn tại! Vui lòng tạo thủ công ở:', uploadsPath);
     // Nếu muốn dừng server khi thiếu thư mục uploads, bỏ comment dòng dưới:
     // process.exit(1);
-} else {
-    const files = fs.readdirSync(uploadsPath);
-    console.log('Thư mục uploads tồn tại. File trong uploads:', files);
 }
 
 // Đảm bảo cấu hình static đúng và đặt TRƯỚC tất cả các route khác

@@ -5,14 +5,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Đảm bảo đúng đường dẫn uploads, KHÔNG tự tạo thư mục uploads nữa
-// SỬA lại đường dẫn uploads về đúng thư mục gốc dự án
-const uploadDir = path.resolve(__dirname, '../../uploads');
+
+const uploadDir = 'c:/GitHub/bancansu_backend_real/uploads';
 console.log('Đường dẫn uploadDir:', uploadDir);
 if (!fs.existsSync(uploadDir)) {
-    console.error('Thư mục uploads KHÔNG tồn tại! Vui lòng tạo thủ công ở:', uploadDir);
-    // Dừng server nếu thiếu thư mục uploads để tránh lỗi Multer khi upload
-    process.exit(1);
+    console.warn('Thư mục uploads KHÔNG tồn tại! Đang tạo mới ở:', uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {

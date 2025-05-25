@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Đảm bảo thư mục uploads luôn tồn tại trước khi upload
-const uploadDir = path.resolve(__dirname, '../../uploads'); // uploads nằm ở thư mục gốc dự án
+const uploadDir = 'c:/GitHub/bancansu_backend_real/uploads';// uploads nằm ở thư mục gốc dự án
 function ensureUploadsDir() {
     try {
         if (!fs.existsSync(uploadDir)) {
