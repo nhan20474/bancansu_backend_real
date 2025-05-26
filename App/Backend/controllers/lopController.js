@@ -1,19 +1,64 @@
 const db = require('../config/db');
 
+// Get all lớp học
 exports.getAllLop = (req, res) => {
-    // Trả về danh sách lớp học kèm tên giáo viên chủ nhiệm
-    const sql = `
-        SELECT l.*, nd.HoTen AS TenGiaoVien
-        FROM LopHoc l
-        LEFT JOIN NguoiDung nd ON l.GiaoVien = nd.MaNguoiDung
-    `;
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn lớp học' });
+    db.query('SELECT * FROM LopHoc', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
         res.json(results);
     });
 };
 
-exports.createLop = (req, res) => { /* ... */ }
+// Count lớp học
+exports.countLop = (req, res) => {
+    db.query('SELECT COUNT(*) AS count FROM LopHoc', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
+        res.json({ count: results[0].count });
+    });
+};
+
+// Create lớp học
+exports.createLop = async (req, res) => {
+    try {
+        // Log dữ liệu nhận được để debug
+        console.log('POST /api/lop body:', req.body);
+
+        // Chỉ nhận đúng các trường cần thiết, KHÔNG truyền MaLop hoặc TenGiaoVien vào SQL
+        const { MaLopHoc, TenLop, ChuyenNganh, KhoaHoc, GiaoVien } = req.body;
+        if (!MaLopHoc || !TenLop) {
+            return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+        }
+
+        // Đảm bảo GiaoVien là số hoặc null
+        const giaoVienValue = GiaoVien && !isNaN(Number(GiaoVien)) ? Number(GiaoVien) : null;
+
+        db.query(
+            'INSERT INTO LopHoc (MaLopHoc, TenLop, ChuyenNganh, KhoaHoc, GiaoVien) VALUES (?, ?, ?, ?, ?)',
+            [MaLopHoc, TenLop, ChuyenNganh || '', KhoaHoc || '', giaoVienValue],
+            (err, result) => {
+                if (err) {
+                    console.error('Lỗi thêm lớp:', err);
+                    return res.status(500).json({ message: 'Lỗi thêm lớp', error: err.message });
+                }
+                res.json({ success: true, id: result.insertId });
+            }
+        );
+    } catch (err) {
+        console.error('Lỗi không xác định khi thêm lớp:', err);
+        res.status(500).json({ message: 'Lỗi không xác định khi thêm lớp', error: err.message });
+    }
+};
+
+// Get lớp học by ID
+exports.getLopById = (req, res) => {
+    const id = req.params.id;
+    db.query('SELECT * FROM LopHoc WHERE MaLopHoc = ?', [id], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
+        if (results.length === 0) return res.status(404).json({ message: 'Không tìm thấy lớp' });
+        res.json(results[0]);
+    });
+};
+
+// Update lớp học
 exports.updateLop = (req, res) => {
     const { id } = req.params;
     const { MaLopHoc, TenLop, ChuyenNganh, KhoaHoc, GiaoVien } = req.body;
@@ -42,4 +87,112 @@ exports.updateLop = (req, res) => {
         }
     );
 };
-exports.deleteLop = (req, res) => { /* ... */ }
+
+// Delete lớp học
+exports.deleteLop = (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(400).json({ message: 'Thiếu mã lớp' });
+    }
+    
+    // Kiểm tra xem lớp có tồn tại không trước khi xóa
+    db.query('SELECT * FROM LopHoc WHERE MaLop = ?', [id], (err, results) => {
+        if (err) {
+            return res.status(500).json({ message: 'Lỗi truy vấn lớp học', error: err.message });
+        }
+        
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy lớp học để xóa' });
+        }
+        
+        // Kiểm tra xem lớp có thành viên không trước khi xóa
+        db.query('SELECT COUNT(*) AS count FROM ThanhVienLop WHERE MaLop = ?', [id], (err, memberResults) => {
+            if (err) {
+                return res.status(500).json({ message: 'Lỗi kiểm tra thành viên lớp', error: err.message });
+            }
+            
+            // Nếu lớp có thành viên, không cho phép xóa (hoặc có thể thay đổi tùy chính sách)
+            if (memberResults[0].count > 0) {
+                return res.status(400).json({ 
+                    message: 'Không thể xóa lớp này vì có thành viên đang tham gia',
+                    memberCount: memberResults[0].count 
+                });
+            }
+            
+            // Kiểm tra xem lớp có nhiệm vụ không trước khi xóa
+            db.query('SELECT COUNT(*) AS count FROM NhiemVu WHERE MaLop = ?', [id], (err, taskResults) => {
+                if (err) {
+                    return res.status(500).json({ message: 'Lỗi kiểm tra nhiệm vụ lớp', error: err.message });
+                }
+                
+                // Nếu lớp có nhiệm vụ, không cho phép xóa (hoặc có thể thay đổi tùy chính sách)
+                if (taskResults[0].count > 0) {
+                    return res.status(400).json({ 
+                        message: 'Không thể xóa lớp này vì có nhiệm vụ liên quan',
+                        taskCount: taskResults[0].count 
+                    });
+                }
+                
+                // Tiến hành xóa lớp khi đã kiểm tra xong
+                db.query('DELETE FROM LopHoc WHERE MaLop = ?', [id], (err, deleteResult) => {
+                    if (err) {
+                        return res.status(500).json({ message: 'Lỗi xóa lớp học', error: err.message });
+                    }
+                    
+                    res.json({ 
+                        success: true, 
+                        message: 'Xóa lớp học thành công',
+                        affectedRows: deleteResult.affectedRows
+                    });
+                });
+            });
+        });
+    });
+};
+
+// Get thành viên lớp
+exports.getThanhVienLop = (req, res) => {
+    const maLop = req.params.id;
+    if (!maLop) {
+        return res.status(400).json({ message: 'Thiếu mã lớp' });
+    }
+    db.query(
+        `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+         FROM ThanhVienLop tvl
+         JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+         WHERE tvl.MaLop = ?
+         ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+        [maLop],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err.message });
+            // Đảm bảo luôn trả về mảng (nếu không có thành viên thì trả về [])
+            if (!Array.isArray(results)) {
+                return res.json([]);
+            }
+            res.json(results);
+        }
+    );
+};
+
+// Get all lớp học with more details (for CanSuList)
+exports.getAllLopWithDetails = (req, res) => {
+    const sql = `
+        SELECT 
+            lh.MaLop, 
+            lh.MaLopHoc, 
+            lh.TenLop, 
+            lh.ChuyenNganh, 
+            lh.KhoaHoc, 
+            lh.GiaoVien,
+            nd.HoTen AS TenGiaoVien,
+            (SELECT COUNT(*) FROM ThanhVienLop WHERE MaLop = lh.MaLop) AS SoThanhVien
+        FROM LopHoc lh
+        LEFT JOIN NguoiDung nd ON lh.GiaoVien = nd.MaNguoiDung
+        ORDER BY lh.TenLop ASC
+    `;
+    
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn danh sách lớp', error: err.message });
+        res.json(results);
+    });
+};
