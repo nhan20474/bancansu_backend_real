@@ -19,17 +19,15 @@ const thongkeRoutes = require('./routes/thongkeRoutes');
 
 const app = express();
 app.use(cors());
-// Đảm bảo middleware parse JSON body luôn được khai báo trước các route
-app.use(express.json());
-// KHÔNG cần bodyParser.json() nữa vì express đã tích hợp sẵn
 
-// Đảm bảo đường dẫn uploads đúng ở gốc dự án (cùng cấp với App, không phải trong App)
+app.use(express.json());
+
+
 const uploadsPath = path.resolve(__dirname, '../../uploads');
-// KHÔNG tự động tạo thư mục uploads nữa, chỉ cảnh báo nếu thiếu
+
 if (!fs.existsSync(uploadsPath)) {
     console.warn('Thư mục uploads KHÔNG tồn tại! Vui lòng tạo thủ công ở:', uploadsPath);
-    // Nếu muốn dừng server khi thiếu thư mục uploads, bỏ comment dòng dưới:
-    // process.exit(1);
+    
 }
 
 // Đảm bảo cấu hình static đúng và đặt TRƯỚC tất cả các route khác
