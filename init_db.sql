@@ -4,6 +4,8 @@ CREATE DATABASE QuanLyBanCanSuLop;
 USE QuanLyBanCanSuLop;
 
 -- 1. BẢNG NGƯỜI DÙNG
+drop table nguoidung
+
 CREATE TABLE NguoiDung (
     MaNguoiDung INT AUTO_INCREMENT PRIMARY KEY,
     MaSoSV VARCHAR(20) UNIQUE NOT NULL,
@@ -92,9 +94,11 @@ CREATE TABLE ThongBao (
 );
 
 -- 8. BẢNG ĐÁNH GIÁ CÁN SỰ
+Drop table danhgiacansu
+
 CREATE TABLE DanhGiaCanSu (
     MaDanhGia INT AUTO_INCREMENT PRIMARY KEY,
-    NguoiGui INT NOT NULL,
+    NguoiGui INT ,
     CanSuDuocDanhGia INT NOT NULL,
     TieuChi NVARCHAR(200),
     NoiDung NVARCHAR(1000),
@@ -152,7 +156,7 @@ INSERT INTO NguoiDung (MaSoSV, HoTen, MatKhau, VaiTro, Email, SoDienThoai, HinhA
 -- Lớp học mẫu
 INSERT INTO LopHoc (MaLopHoc, TenLop, ChuyenNganh, KhoaHoc, GiaoVien) VALUES
 ('22DTHE3', N'22DTHE3', N'Công nghệ thông tin', '2022-2026', 2),
-('22DTHE2', N'22DTHE3', N'Kỹ thuật phần mềm', '2022-2026', 2);
+('22DTHE2', N'22DTHE2', N'Kỹ thuật phần mềm', '2022-2026', 2);
 
 -- Thành viên lớp mẫu
 INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
@@ -168,42 +172,19 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (1, 12, 0),
 (1, 13, 0),
 (1, 14, 0),
-(1, 15, 0),
-(1, 16, 0),
-(1, 17, 0),
-(1, 18, 0),
-(1, 19, 0),
-(1, 20, 0),
-(1, 21, 0),
-(1, 22, 0),
-(1, 23, 0),
-(1, 24, 0),
-(1, 25, 0),
-(1, 26, 0),
-(1, 27, 0),
-(1, 28, 0),
-(1, 29, 0),
-(1, 30, 0),
-(1, 31, 0),
-(1, 32, 0),
-(1, 33, 0),
-(1, 34, 0),
-(2, 35, 0),
-(2, 36, 0),
-(2, 37, 0),
-(2, 38, 0),
-(2, 39, 0),
-(2, 40, 0),
-(2, 41, 0),
-(2, 42, 0),
-(2, 43, 0),
-(2, 44, 0),
-(2, 45, 0),
-(2, 46, 0),
-(2, 47, 0),
-(2, 48, 0),
-(2, 49, 0),
-(2, 50, 0);
+(2, 15, 0),
+(2, 16, 0),
+(2, 17, 0),
+(2, 18, 0),
+(2, 19, 0),
+(2, 20, 0),
+(2, 21, 0),
+(2, 22, 0),
+(2, 23, 0),
+(2, 24, 0),
+(2, 25, 0),
+(2, 26, 0),
+(2, 27, 0)
 
 
 -- Nhiệm vụ mẫu
