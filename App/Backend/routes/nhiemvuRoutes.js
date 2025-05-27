@@ -4,6 +4,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const nhiemvuController = require('../controllers/nhiemvuController');
+const requireAuth = require('../middleware/requireAuth');
+const authRole = require('../middleware/authRole');
 
 // Use the exact specified upload directory path
 const uploadDir = 'C:\\GitHub\\bancansu_backend_real\\uploads';
@@ -26,31 +28,31 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Lấy danh sách tất cả nhiệm vụ
+// Lấy danh sách tất cả nhiệm vụ (ai cũng xem được)
 router.get('/', nhiemvuController.getAllNhiemVu);
 
-// Lấy danh sách lớp học cho nhiệm vụ - Đặt trước route động /:id
+// Lấy danh sách lớp học cho nhiệm vụ - Đặt trước route động /:id (ai cũng xem được)
 router.get('/lophoc', nhiemvuController.getLopHoc);
 
-// Lấy chi tiết một nhiệm vụ theo id
+// Lấy chi tiết một nhiệm vụ theo id (ai cũng xem được)
 router.get('/:id', nhiemvuController.getNhiemVuById);
 
-// Route upload file riêng
-router.post('/upload', upload.single('TepDinhKem'), nhiemvuController.uploadFile);
+// Route upload file riêng (chỉ admin và giangvien)
+router.post('/upload', requireAuth, authRole(['admin', 'giangvien']), upload.single('TepDinhKem'), nhiemvuController.uploadFile);
 
-// Route thêm nhiệm vụ mới
-router.post('/', upload.single('TepDinhKem'), nhiemvuController.createNhiemVu);
+// Route thêm nhiệm vụ mới (chỉ admin và giangvien)
+router.post('/', requireAuth, authRole(['admin', 'giangvien']), upload.single('TepDinhKem'), nhiemvuController.createNhiemVu);
 
-// Sửa nhiệm vụ
-router.put('/:id', upload.single('TepDinhKem'), nhiemvuController.updateNhiemVu);
+// Sửa nhiệm vụ (chỉ admin và giangvien)
+router.put('/:id', requireAuth, authRole(['admin', 'giangvien']), upload.single('TepDinhKem'), nhiemvuController.updateNhiemVu);
 
-// Xóa nhiệm vụ
-router.delete('/:id', nhiemvuController.deleteNhiemVu);
+// Xóa nhiệm vụ (chỉ admin và giangvien)
+router.delete('/:id', requireAuth, authRole(['admin', 'giangvien']), nhiemvuController.deleteNhiemVu);
 
-// Xem chi tiết các thành viên thực hiện nhiệm vụ
+// Xem chi tiết các thành viên thực hiện nhiệm vụ (ai cũng xem được)
 router.get('/:id/chitiet', nhiemvuController.getChiTietNhiemVu);
 
-// Nộp bài cho nhiệm vụ
+// Nộp bài cho nhiệm vụ (ai cũng nộp được)
 router.post('/:id/nopbai', upload.single('TepNop'), nhiemvuController.nopBai);
 
 module.exports = router;

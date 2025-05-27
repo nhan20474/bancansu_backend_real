@@ -9,7 +9,8 @@ exports.getAllDanhGia = (req, res) => {
             dg.TieuChi,
             dg.NoiDung,
             ng.HoTen AS TenNguoiGui,
-            dg.NgayGui
+            dg.NgayGui,
+            dg.NguoiGui
          FROM DanhGiaCanSu dg
          LEFT JOIN NguoiDung cs ON dg.CanSuDuocDanhGia = cs.MaNguoiDung
          LEFT JOIN NguoiDung ng ON dg.NguoiGui = ng.MaNguoiDung
@@ -25,21 +26,27 @@ exports.getAllDanhGia = (req, res) => {
             };
             const data = (results || []).map(dg => ({
                 ...dg,
-                TenNguoiGui: dg.TenNguoiGui ? dg.TenNguoiGui : 'Ẩn danh',
+                TenNguoiGui: dg.NguoiGui ? (dg.TenNguoiGui || '') : 'Ẩn danh',
                 MucLabel: mucLabel[dg.TieuChi] || '',
+                AnDanh: !dg.NguoiGui // true nếu NguoiGui là null
             }));
             res.json(data);
         }
     );
 };
 
-// Thêm đánh giá cán sự (cho phép truyền TenCanSu thay vì CanSuDuocDanhGia)
+// Thêm đánh giá cán sự (cho phép truyền TenCanSu thay vì CanSuDuocDanhGia, và AnDanh)
 exports.createDanhGia = (req, res) => {
-    let { NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung, TenCanSu } = req.body;
+    let { NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung, TenCanSu, AnDanh } = req.body;
     if ((!CanSuDuocDanhGia && !TenCanSu) || !TieuChi) {
         return res.status(400).json({ message: 'Thiếu thông tin đánh giá' });
     }
-    if (NguoiGui === '' || NguoiGui === undefined) NguoiGui = null;
+    // Nếu AnDanh là true thì luôn ép NguoiGui = null (bỏ qua giá trị truyền lên)
+    if (AnDanh === true || AnDanh === 'true' || AnDanh === 1 || AnDanh === '1') {
+        NguoiGui = null;
+    } else if (NguoiGui === '' || NguoiGui === undefined) {
+        NguoiGui = null;
+    }
 
     // Nếu truyền TenCanSu (không có CanSuDuocDanhGia), cần truy vấn để lấy MaNguoiDung từ tên
     if (!CanSuDuocDanhGia && TenCanSu) {
@@ -62,7 +69,6 @@ exports.createDanhGia = (req, res) => {
             }
         );
     } else {
-        // Trường hợp truyền CanSuDuocDanhGia (bình thường)
         db.query(
             `INSERT INTO DanhGiaCanSu (NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung, NgayGui) VALUES (?, ?, ?, ?, NOW())`,
             [NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung || ''],
@@ -74,19 +80,60 @@ exports.createDanhGia = (req, res) => {
     }
 };
 
-// Sửa đánh giá cán sự
+// Sửa đánh giá cán sự (cho phép cập nhật trạng thái ẩn danh)
 exports.updateDanhGia = (req, res) => {
     const id = req.params.id;
-    const { TieuChi, NoiDung } = req.body;
-    db.query(
-        `UPDATE DanhGiaCanSu SET TieuChi=?, NoiDung=? WHERE MaDanhGia=?`,
-        [TieuChi || null, NoiDung || '', id],
-        (err, result) => {
-            if (err) return res.status(500).json({ message: 'Lỗi cập nhật đánh giá', error: err.message });
-            if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy đánh giá' });
-            res.json({ success: true });
+    const { TieuChi, NoiDung, AnDanh, NguoiGui } = req.body;
+    // Nếu AnDanh là true thì luôn ép NguoiGui = null
+    if (AnDanh === true || AnDanh === 'true' || AnDanh === 1 || AnDanh === '1') {
+        db.query(
+            `UPDATE DanhGiaCanSu SET TieuChi=?, NoiDung=?, NguoiGui=NULL WHERE MaDanhGia=?`,
+            [TieuChi || null, NoiDung || '', id],
+            (err, result) => {
+                if (err) return res.status(500).json({ message: 'Lỗi cập nhật đánh giá', error: err.message });
+                if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy đánh giá' });
+                res.json({ success: true });
+            }
+        );
+    } else {
+        // Không ẩn danh: phải có NguoiGui hợp lệ
+        let nguoiGuiValue = NguoiGui;
+        if (!nguoiGuiValue) {
+            // Lấy từ DB, nếu DB cũng null thì báo lỗi
+            db.query(
+                'SELECT NguoiGui FROM DanhGiaCanSu WHERE MaDanhGia=?',
+                [id],
+                (err, rows) => {
+                    if (err) return res.status(500).json({ message: 'Lỗi truy vấn đánh giá', error: err.message });
+                    if (!rows || rows.length === 0) return res.status(404).json({ message: 'Không tìm thấy đánh giá' });
+                    nguoiGuiValue = rows[0].NguoiGui;
+                    if (!nguoiGuiValue) {
+                        // Không thể chuyển từ ẩn danh sang không ẩn danh nếu không truyền NguoiGui
+                        return res.status(400).json({ message: 'Vui lòng chọn người gửi khi bỏ ẩn danh!' });
+                    }
+                    db.query(
+                        `UPDATE DanhGiaCanSu SET TieuChi=?, NoiDung=?, NguoiGui=? WHERE MaDanhGia=?`,
+                        [TieuChi || null, NoiDung || '', nguoiGuiValue, id],
+                        (err2, result) => {
+                            if (err2) return res.status(500).json({ message: 'Lỗi cập nhật đánh giá', error: err2.message });
+                            if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy đánh giá' });
+                            res.json({ success: true });
+                        }
+                    );
+                }
+            );
+        } else {
+            db.query(
+                `UPDATE DanhGiaCanSu SET TieuChi=?, NoiDung=?, NguoiGui=? WHERE MaDanhGia=?`,
+                [TieuChi || null, NoiDung || '', nguoiGuiValue, id],
+                (err, result) => {
+                    if (err) return res.status(500).json({ message: 'Lỗi cập nhật đánh giá', error: err.message });
+                    if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy đánh giá' });
+                    res.json({ success: true });
+                }
+            );
         }
-    );
+    }
 };
 
 // Xóa đánh giá cán sự

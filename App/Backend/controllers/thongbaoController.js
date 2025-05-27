@@ -72,13 +72,20 @@ exports.createThongBao = (req, res) => {
 
 // Sửa thông báo
 exports.updateThongBao = (req, res) => {
-    const { MaLop, NguoiGui, TieuDe, NoiDung, AnhDinhKemCu, TepDinhKem } = req.body;
+    const { MaLop, NguoiGui, TieuDe, NoiDung, AnhDinhKemCu, TepDinhKem, link } = req.body;
     let AnhDinhKem = AnhDinhKemCu || null;
     if (req.file) {
         AnhDinhKem = req.file.filename;
     }
-    // Nếu không truyền TepDinhKem thì sẽ là null
-    const tepDinhKemValue = typeof TepDinhKem === 'undefined' || TepDinhKem === '' ? null : TepDinhKem;
+    // Ưu tiên lấy link nếu có, nếu không lấy TepDinhKem
+    let tepDinhKemValue = null;
+    if (typeof link !== 'undefined' && link !== '') {
+        tepDinhKemValue = link;
+    } else if (typeof TepDinhKem !== 'undefined' && TepDinhKem !== '') {
+        tepDinhKemValue = TepDinhKem;
+    } else {
+        tepDinhKemValue = null;
+    }
     if (!MaLop || !NguoiGui || !TieuDe) {
         return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
     }

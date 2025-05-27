@@ -1,24 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const thongkeController = require('../controllers/thongkeController');
+const requireAuth = require('../middleware/requireAuth');
+const authRole = require('../middleware/authRole');
 
-// Thống kê theo lớp
-router.get('/lop/:maLop', thongkeController.thongKeTheoLop);
-
-// Thống kê theo người dùng
-router.get('/nguoidung/:maNguoiDung', thongkeController.thongKeTheoNguoiDung);
-
-// Tổng quan hệ thống
-router.get('/tongquan', thongkeController.tongQuanHeThong);
-
-// Nhiệm vụ theo lớp
-router.get('/nhiemvu-lop/:maLop', thongkeController.nhiemVuTheoLop);
-
-// Điểm trung bình cán sự
-router.get('/diemtrungbinh-cansu', thongkeController.diemTrungBinhCanSu);
+// Áp dụng phân quyền cho tất cả các route thống kê
+router.get('/lop/:maLop', requireAuth, authRole(['admin', 'giangvien']), thongkeController.thongKeTheoLop);
+router.get('/nguoidung/:maNguoiDung', requireAuth, authRole(['admin', 'giangvien']), thongkeController.thongKeTheoNguoiDung);
+router.get('/tongquan', requireAuth, authRole(['admin', 'giangvien']), thongkeController.tongQuanHeThong);
+router.get('/nhiemvu-lop/:maLop', requireAuth, authRole(['admin', 'giangvien']), thongkeController.nhiemVuTheoLop);
+router.get('/diemtrungbinh-cansu', requireAuth, authRole(['admin', 'giangvien']), thongkeController.diemTrungBinhCanSu);
 
 // Trang chủ thống kê: trả về tổng quan + điểm trung bình cán sự + 5 bản ghi thống kê lớp đầu tiên
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, authRole(['admin', 'giangvien']), async (req, res) => {
   const db = require('../config/db');
   try {
     const [tongquan] = await new Promise((resolve, reject) => {

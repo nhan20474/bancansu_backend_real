@@ -1,6 +1,13 @@
 const db = require('../config/db');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt'); // Đảm bảo đã import
+// Thêm jwt nếu có
+let jwt;
+try {
+    jwt = require('jsonwebtoken');
+} catch (e) {
+    jwt = null;
+}
 
 exports.login = (req, res) => {
     const { username, password } = req.body;
@@ -27,6 +34,25 @@ exports.login = (req, res) => {
                 // Xóa MatKhau trước khi trả về
                 delete user.MatKhau;
                 user.userId = user.MaNguoiDung;
+                // Sinh token (JWT hoặc chuỗi giả lập)
+                let token = null;
+                if (jwt) {
+                    // Nếu có secret, dùng biến môi trường hoặc chuỗi mặc định
+                    const secret = process.env.JWT_SECRET || 'secret_key';
+                    token = jwt.sign(
+                        {
+                            userId: user.MaNguoiDung,
+                            username: user.username,
+                            role: user.role
+                        },
+                        secret,
+                        { expiresIn: '7d' }
+                    );
+                } else {
+                    // Nếu không có jwt, trả về chuỗi đơn giản (KHÔNG bảo mật, chỉ để frontend hoạt động)
+                    token = Buffer.from(`${user.MaNguoiDung}:${Date.now()}`).toString('base64');
+                }
+                user.token = token;
                 res.json(user);
             });
         }
