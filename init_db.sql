@@ -172,7 +172,6 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (1, 12, 0),
 (1, 13, 0),
 (1, 14, 0),
-<<<<<<< HEAD
 (2, 15, 0),
 (2, 16, 0),
 (2, 17, 0),
@@ -186,21 +185,6 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (2, 25, 0),
 (2, 26, 0),
 (2, 27, 0)
-=======
-(1, 15, 0),
-(1, 16, 0),
-(1, 17, 0),
-(1, 18, 0),
-(1, 19, 0),
-(1, 20, 0),
-(1, 21, 0),
-(1, 22, 0),
-(1, 23, 0),
-(1, 24, 0),
-(1, 25, 0),
-(1, 26, 0),
-(1, 27, 0)
->>>>>>> ebd7fe923032b93a4c817a81c2286a50f038c9d2
 
 
 -- Nhiệm vụ mẫu
@@ -221,8 +205,7 @@ INSERT INTO ThongBao (MaLop, NguoiGui, TieuDe, NoiDung, TepDinhKem, AnhDinhKem) 
 
 -- Đánh giá cán sự mẫu
 INSERT INTO DanhGiaCanSu (NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung) VALUES
-(4, 5, N'Tích cực', N'Làm việc rất tốt'),
-(6, 5, N'Chăm chỉ', N'Hoàn thành nhiệm vụ đúng hạn');
+
 
 -- Thống kê mẫu
 INSERT INTO ThongKe (MaLop, MaNguoiDung, TongNhiemVu, DaHoanThanh, DanhGiaTB) VALUES
