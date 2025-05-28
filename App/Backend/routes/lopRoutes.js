@@ -19,4 +19,29 @@ router.post('/', requireAuth, authRole(['admin', 'giangvien']), lopController.cr
 router.put('/:id', requireAuth, authRole(['admin', 'giangvien']), lopController.updateLop);
 router.delete('/:id', requireAuth, authRole(['admin', 'giangvien']), lopController.deleteLop);
 
+// Thêm thành viên vào lớp (sinh viên hoặc cán sự)
+// Sample payload: { "MaLop": "1", "MaNguoiDung": "2", "LaCanSu": 1 }
+router.post('/add-thanhvien', requireAuth, authRole(['admin', 'giangvien']), lopController.addThanhVienLop);
+
+// Xóa thành viên khỏi lớp
+// Sample payload: { "MaLop": "1", "MaNguoiDung": "2" }
+router.post('/remove-thanhvien', requireAuth, authRole(['admin', 'giangvien']), lopController.removeThanhVienLop);
+
+// Thêm thành viên vào lớp (POST /api/lop/thanhvienlop)
+// Body: { "MaLop": "1", "MaNguoiDung": "2", "LaCanSu": 1 }
+router.post('/thanhvienlop', requireAuth, authRole(['admin', 'giangvien']), lopController.addThanhVienLop);
+
+// Xóa thành viên khỏi lớp (DELETE /api/lop/thanhvienlop)
+// Body: { "MaLop": "1", "MaNguoiDung": "2" }
+router.delete('/thanhvienlop', requireAuth, authRole(['admin', 'giangvien']), lopController.removeThanhVienLop);
+
+// Xóa thành viên khỏi lớp theo dạng RESTful: /api/lop/:maLop/thanhvien/:maNguoiDung
+router.delete('/:maLop/thanhvien/:maNguoiDung', requireAuth, authRole(['admin', 'giangvien']), (req, res) => {
+    const MaLop = req.params.maLop;
+    const MaNguoiDung = req.params.maNguoiDung;
+    // Gọi controller trực tiếp
+    req.body = { MaLop, MaNguoiDung };
+    return require('../controllers/lopController').removeThanhVienLop(req, res);
+});
+
 module.exports = router;

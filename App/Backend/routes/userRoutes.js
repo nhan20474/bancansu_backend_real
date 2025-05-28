@@ -38,6 +38,15 @@ router.get('/profile', userController.getProfile);
 // API upload ảnh đại diện
 router.post('/upload-avatar', upload.single('avatar'), userController.uploadAvatar);
 
+// Thay đổi email và số điện thoại
+// Sample payload cho API này:
+// {
+//   "MaNguoiDung": "1",
+//   "email": "newemail@example.com",
+//   "phone": "0987654321"
+// }
+router.post('/change-contact', userController.changeContact);
+
 // PUT /api/user/:id - cập nhật thông tin người dùng (bao gồm HinhAnh)
 router.put('/:id', userController.updateUser);
 
@@ -50,4 +59,5 @@ router.get('/sinhvien/count', userController.countSinhVien);
 // Đếm số lượng cán sự (API chuẩn REST: /api/user/cansu/count)
 router.get('/cansu/count', userController.countCanSu);
 
+// Đảm bảo KHÔNG có dòng trống hoặc dòng code nào phía dưới dòng này
 module.exports = router;

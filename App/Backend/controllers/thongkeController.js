@@ -7,7 +7,7 @@ exports.thongKeTheoLop = (req, res) => {
         `SELECT nd.MaNguoiDung, nd.HoTen, 
                 COUNT(nv.MaNhiemVu) AS TongNhiemVu,
                 SUM(CASE WHEN ctnv.TrangThai='Hoàn thành' THEN 1 ELSE 0 END) AS DaHoanThanh,
-                AVG(dg.TieuChi) AS DiemTrungBinh
+                ROUND(AVG(dg.TieuChi), 2) AS DiemTrungBinh
          FROM NguoiDung nd
          LEFT JOIN ThanhVienLop tvl ON nd.MaNguoiDung = tvl.MaNguoiDung AND tvl.MaLop = ?
          LEFT JOIN ChiTietNhiemVu ctnv ON nd.MaNguoiDung = ctnv.MaNguoiDung
@@ -18,7 +18,12 @@ exports.thongKeTheoLop = (req, res) => {
         [maLop, maLop, maLop],
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn thống kê', error: err.message });
-            res.json(results);
+            // Nếu không có điểm thì trả về 0 thay vì null
+            const data = (results || []).map(row => ({
+                ...row,
+                DiemTrungBinh: row.DiemTrungBinh === null ? 0 : row.DiemTrungBinh
+            }));
+            res.json(data);
         }
     );
 };
@@ -30,7 +35,7 @@ exports.thongKeTheoNguoiDung = (req, res) => {
         `SELECT nd.MaNguoiDung, nd.HoTen, 
                 COUNT(nv.MaNhiemVu) AS TongNhiemVu,
                 SUM(CASE WHEN ctnv.TrangThai='Hoàn thành' THEN 1 ELSE 0 END) AS DaHoanThanh,
-                AVG(dg.TieuChi) AS DiemTrungBinh
+                ROUND(AVG(dg.TieuChi), 2) AS DiemTrungBinh
          FROM NguoiDung nd
          LEFT JOIN ChiTietNhiemVu ctnv ON nd.MaNguoiDung = ctnv.MaNguoiDung
          LEFT JOIN NhiemVu nv ON ctnv.MaNhiemVu = nv.MaNhiemVu
@@ -40,7 +45,9 @@ exports.thongKeTheoNguoiDung = (req, res) => {
         [maNguoiDung],
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn thống kê', error: err.message });
-            res.json(results[0] || {});
+            const row = results[0] || {};
+            row.DiemTrungBinh = row.DiemTrungBinh === null ? 0 : row.DiemTrungBinh;
+            res.json(row);
         }
     );
 };
@@ -79,14 +86,19 @@ exports.nhiemVuTheoLop = (req, res) => {
 
 exports.diemTrungBinhCanSu = (req, res) => {
     db.query(
-        `SELECT cs.MaNguoiDung, nd.HoTen, AVG(dg.TieuChi) AS DiemTrungBinh
+        `SELECT cs.MaNguoiDung, nd.HoTen, IFNULL(AVG(dg.TieuChi), 0) AS DiemTrungBinh
          FROM CanSu cs
          JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
          LEFT JOIN DanhGiaCanSu dg ON cs.MaNguoiDung = dg.CanSuDuocDanhGia
          GROUP BY cs.MaNguoiDung, nd.HoTen`,
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn điểm trung bình', error: err.message });
-            res.json(results);
+            // Đảm bảo DiemTrungBinh là số thực, làm tròn 2 chữ số, không null
+            const data = (results || []).map(row => ({
+                ...row,
+                DiemTrungBinh: Math.round(Number(row.DiemTrungBinh) * 100) / 100
+            }));
+            res.json(data);
         }
     );
 };

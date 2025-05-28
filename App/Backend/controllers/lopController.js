@@ -196,3 +196,56 @@ exports.getAllLopWithDetails = (req, res) => {
         res.json(results);
     });
 };
+
+// Thêm thành viên vào lớp (POST /api/lop/thanhvienlop)
+exports.addThanhVienLop = (req, res) => {
+    const { MaLop, MaNguoiDung, LaCanSu } = req.body;
+    if (!MaLop || !MaNguoiDung || typeof LaCanSu === 'undefined') {
+        return res.status(400).json({ message: 'Thiếu MaLop, MaNguoiDung hoặc LaCanSu.' });
+    }
+    db.query(
+        'SELECT * FROM ThanhVienLop WHERE MaLop=? AND MaNguoiDung=?',
+        [MaLop, MaNguoiDung],
+        (err, rows) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn.' });
+            if (rows && rows.length > 0) {
+                db.query(
+                    'UPDATE ThanhVienLop SET LaCanSu=? WHERE MaLop=? AND MaNguoiDung=?',
+                    [LaCanSu, MaLop, MaNguoiDung],
+                    (err2) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi cập nhật vai trò.' });
+                        return res.json({ success: true, message: 'Cập nhật vai trò thành công.' });
+                    }
+                );
+            } else {
+                db.query(
+                    'INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES (?, ?, ?)',
+                    [MaLop, MaNguoiDung, LaCanSu],
+                    (err2) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi thêm thành viên vào lớp.' });
+                        return res.json({ success: true, message: 'Thêm thành viên vào lớp thành công.' });
+                    }
+                );
+            }
+        }
+    );
+};
+
+// Xóa thành viên khỏi lớp (DELETE /api/lop/thanhvienlop)
+exports.removeThanhVienLop = (req, res) => {
+    // Hỗ trợ lấy từ body (application/json) hoặc query (nếu client gửi qua URL)
+    const MaLop = req.body.MaLop || req.query.MaLop;
+    const MaNguoiDung = req.body.MaNguoiDung || req.query.MaNguoiDung;
+    if (!MaLop || !MaNguoiDung) {
+        return res.status(400).json({ message: 'Thiếu MaLop hoặc MaNguoiDung.' });
+    }
+    db.query(
+        'DELETE FROM ThanhVienLop WHERE MaLop=? AND MaNguoiDung=?',
+        [MaLop, MaNguoiDung],
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Lỗi xóa thành viên khỏi lớp.' });
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy thành viên để xóa.' });
+            return res.json({ success: true, message: 'Xóa thành viên khỏi lớp thành công.' });
+        }
+    );
+};

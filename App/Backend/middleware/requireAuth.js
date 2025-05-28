@@ -16,6 +16,11 @@ module.exports = (req, res, next) => {
         token = req.headers['token'];
     }
 
+    // Thêm hỗ trợ lấy token từ query (nếu client gửi qua URL)
+    if (!token && req.query && req.query.token) {
+        token = req.query.token;
+    }
+
     if (!token) {
         return res.status(401).json({ message: 'Chưa đăng nhập hoặc thiếu thông tin quyền.' });
     }

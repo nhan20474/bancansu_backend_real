@@ -17,6 +17,7 @@ exports.getAllDanhGia = (req, res) => {
          ORDER BY dg.NgayGui DESC`,
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn đánh giá', error: err.message });
+            // Nếu TieuChi là số thì gán nhãn, nếu là chuỗi thì trả về đúng chuỗi đó
             const mucLabel = {
                 1: 'Cần cải thiện',
                 2: 'Trung bình',
@@ -24,12 +25,21 @@ exports.getAllDanhGia = (req, res) => {
                 4: 'Tốt',
                 5: 'Xuất sắc'
             };
-            const data = (results || []).map(dg => ({
-                ...dg,
-                TenNguoiGui: dg.NguoiGui ? (dg.TenNguoiGui || '') : 'Ẩn danh',
-                MucLabel: mucLabel[dg.TieuChi] || '',
-                AnDanh: !dg.NguoiGui // true nếu NguoiGui là null
-            }));
+            const data = (results || []).map(dg => {
+                let label = '';
+                // Nếu TieuChi là số (1-5), gán nhãn, nếu là chuỗi thì lấy nguyên văn
+                if (!isNaN(Number(dg.TieuChi)) && mucLabel[Number(dg.TieuChi)]) {
+                    label = mucLabel[Number(dg.TieuChi)];
+                } else if (typeof dg.TieuChi === 'string') {
+                    label = dg.TieuChi;
+                }
+                return {
+                    ...dg,
+                    TenNguoiGui: dg.NguoiGui ? (dg.TenNguoiGui || '') : 'Ẩn danh',
+                    MucLabel: label,
+                    AnDanh: !dg.NguoiGui // true nếu NguoiGui là null
+                };
+            });
             res.json(data);
         }
     );

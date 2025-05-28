@@ -143,3 +143,29 @@ exports.countCanSu = (req, res) => {
         res.json({ count: results[0].count });
     });
 };
+
+exports.changeContact = (req, res) => {
+    // Lấy MaNguoiDung, email, phone từ req.body
+    const { MaNguoiDung, email, phone } = req.body;
+    if (!MaNguoiDung || !email || !phone) {
+        return res.status(400).json({ message: 'Thiếu thông tin MaNguoiDung, email hoặc phone.' });
+    }
+    // Cập nhật thông tin email và số điện thoại cho người dùng
+    db.query(
+        'UPDATE NguoiDung SET Email=?, SoDienThoai=? WHERE MaNguoiDung=?',
+        [email, phone, MaNguoiDung],
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Lỗi cập nhật thông tin liên hệ.', error: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy người dùng để cập nhật.' });
+            // Trả về thông tin mới nhất của người dùng
+            db.query(
+                'SELECT MaNguoiDung, MaSoSV, HoTen, VaiTro, Email, SoDienThoai, HinhAnh FROM NguoiDung WHERE MaNguoiDung=?',
+                [MaNguoiDung],
+                (err2, rows) => {
+                    if (err2) return res.status(500).json({ message: 'Lỗi truy vấn sau cập nhật', error: err2.message });
+                    res.json({ success: true, user: rows[0] });
+                }
+            );
+        }
+    );
+};
