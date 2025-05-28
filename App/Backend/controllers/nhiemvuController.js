@@ -320,3 +320,21 @@ exports.nopBai = (req, res) => {
         }
     );
 };
+
+// Tìm kiếm nhiệm vụ theo tiêu đề hoặc mô tả
+exports.searchNhiemVu = (req, res) => {
+    const keyword = req.query.q || '';
+    db.query(
+        `SELECT nv.*, lh.TenLop, nd.HoTen AS TenNguoiGiao
+         FROM NhiemVu nv
+         LEFT JOIN LopHoc lh ON nv.MaLop = lh.MaLop
+         LEFT JOIN NguoiDung nd ON nv.NguoiGiao = nd.MaNguoiDung
+         WHERE nv.TieuDe LIKE ? OR nv.MoTa LIKE ?
+         ORDER BY nv.HanHoanThanh DESC`,
+        [`%${keyword}%`, `%${keyword}%`],
+        (err, rows) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn nhiệm vụ', error: err });
+            res.json(rows);
+        }
+    );
+};

@@ -2,10 +2,42 @@ const db = require('../config/db');
 
 // Get all lớp học
 exports.getAllLop = (req, res) => {
-    db.query('SELECT * FROM LopHoc', (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
-        res.json(results);
-    });
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    // Nếu là sinhvien hoặc cansu thì chỉ trả về lớp mà user là thành viên
+    if (role === 'sinhvien' || role === 'cansu') {
+        if (!userId) {
+            return res.json([]);
+        }
+        db.query(
+            `SELECT DISTINCT lh.* 
+             FROM LopHoc lh
+             INNER JOIN ThanhVienLop tvl ON lh.MaLop = tvl.MaLop AND tvl.MaNguoiDung = ?`,
+            [userId],
+            (err, results) => {
+                if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
+                res.json(Array.isArray(results) ? results : []);
+            }
+        );
+    } else if (role === 'admin' || role === 'giangvien') {
+        db.query('SELECT * FROM LopHoc', (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn', error: err.message });
+            // Nếu không có lớp nào, trả về mảng rỗng thay vì null/undefined
+            res.json(Array.isArray(results) ? results : []);
+        });
+    } else {
+        // Nếu không xác định được role, trả về mảng rỗng (không lỗi)
+        return res.json([]);
+    }
 };
 
 // Count lớp học
@@ -156,45 +188,197 @@ exports.getThanhVienLop = (req, res) => {
     if (!maLop) {
         return res.status(400).json({ message: 'Thiếu mã lớp' });
     }
-    db.query(
-        `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
-         FROM ThanhVienLop tvl
-         JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
-         WHERE tvl.MaLop = ?
-         ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
-        [maLop],
-        (err, results) => {
-            if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err.message });
-            // Đảm bảo luôn trả về mảng (nếu không có thành viên thì trả về [])
-            if (!Array.isArray(results)) {
-                return res.json([]);
+
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    if (!userId || !role) {
+        return res.status(403).json({ message: 'Không xác thực được người dùng.' });
+    }
+
+    // Admin được xem tất cả
+    if (role === 'admin') {
+        db.query(
+            `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+             FROM ThanhVienLop tvl
+             JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+             WHERE tvl.MaLop = ?
+             ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+            [maLop],
+            (err, results) => {
+                if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err.message });
+                if (!Array.isArray(results)) return res.json([]);
+                res.json(results);
             }
-            res.json(results);
-        }
-    );
+        );
+        return;
+    }
+
+    // Giảng viên chỉ xem được lớp mình chủ nhiệm
+    if (role === 'giangvien') {
+        db.query(
+            'SELECT MaLop FROM LopHoc WHERE MaLop = ? AND GiaoVien = ?',
+            [maLop, userId],
+            (err, rows) => {
+                if (err) return res.status(500).json({ message: 'Lỗi kiểm tra quyền giảng viên', error: err.message });
+                if (!rows || rows.length === 0) {
+                    return res.status(403).json({ message: 'Bạn không phải giảng viên chủ nhiệm lớp này.' });
+                }
+                db.query(
+                    `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+                     FROM ThanhVienLop tvl
+                     JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+                     WHERE tvl.MaLop = ?
+                     ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+                    [maLop],
+                    (err2, results) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err2.message });
+                        if (!Array.isArray(results)) return res.json([]);
+                        res.json(results);
+                    }
+                );
+            }
+        );
+        return;
+    }
+
+    // Sinh viên chỉ xem được lớp mình là thành viên
+    if (role === 'sinhvien') {
+        db.query(
+            'SELECT 1 FROM ThanhVienLop WHERE MaLop = ? AND MaNguoiDung = ? LIMIT 1',
+            [maLop, userId],
+            (err, rows) => {
+                if (err) return res.status(500).json({ message: 'Lỗi kiểm tra thành viên lớp', error: err.message });
+                if (!rows || rows.length === 0) {
+                    return res.status(403).json({ message: 'Bạn không phải thành viên lớp này.' });
+                }
+                db.query(
+                    `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+                     FROM ThanhVienLop tvl
+                     JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+                     WHERE tvl.MaLop = ?
+                     ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+                    [maLop],
+                    (err2, results) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err2.message });
+                        if (!Array.isArray(results)) return res.json([]);
+                        res.json(results);
+                    }
+                );
+            }
+        );
+        return;
+    }
+
+    // Cán sự: chỉ cần là cán sự của lớp này (không cần là thành viên)
+    if (role === 'cansu') {
+        db.query(
+            'SELECT 1 FROM CanSu WHERE MaLop = ? AND MaNguoiDung = ? LIMIT 1',
+            [maLop, userId],
+            (err, rows) => {
+                if (err) return res.status(500).json({ message: 'Lỗi kiểm tra quyền cán sự', error: err.message });
+                if (!rows || rows.length === 0) {
+                    return res.status(403).json({ message: 'Bạn không phải cán sự lớp này.' });
+                }
+                db.query(
+                    `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+                     FROM ThanhVienLop tvl
+                     JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+                     WHERE tvl.MaLop = ?
+                     ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+                    [maLop],
+                    (err2, results) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err2.message });
+                        if (!Array.isArray(results)) return res.json([]);
+                        res.json(results);
+                    }
+                );
+            }
+        );
+        return;
+    }
+
+    // Các vai trò khác không được phép
+    return res.status(403).json({ message: 'Bạn không có quyền xem danh sách lớp này.' });
 };
 
-// Get all lớp học with more details (for CanSuList)
+// Lấy tất cả lớp học kèm chi tiết (dùng cho danh sách cán sự)
 exports.getAllLopWithDetails = (req, res) => {
-    const sql = `
-        SELECT 
-            lh.MaLop, 
-            lh.MaLopHoc, 
-            lh.TenLop, 
-            lh.ChuyenNganh, 
-            lh.KhoaHoc, 
-            lh.GiaoVien,
-            nd.HoTen AS TenGiaoVien,
-            (SELECT COUNT(*) FROM ThanhVienLop WHERE MaLop = lh.MaLop) AS SoThanhVien
-        FROM LopHoc lh
-        LEFT JOIN NguoiDung nd ON lh.GiaoVien = nd.MaNguoiDung
-        ORDER BY lh.TenLop ASC
-    `;
-    
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn danh sách lớp', error: err.message });
-        res.json(results);
-    });
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    // Nếu là sinh viên hoặc cán sự, chỉ trả về các lớp mà user là thành viên
+    if (role === 'sinhvien' || role === 'cansu') {
+        if (!userId) {
+            return res.json([]);
+        }
+        // Thêm log để kiểm tra userId và role
+        console.log('Lấy lớp cho user:', userId, 'role:', role);
+        const sql = `
+            SELECT DISTINCT
+                lh.MaLop, 
+                lh.MaLopHoc, 
+                lh.TenLop, 
+                lh.ChuyenNganh, 
+                lh.KhoaHoc, 
+                lh.GiaoVien,
+                nd.HoTen AS TenGiaoVien,
+                (SELECT COUNT(*) FROM ThanhVienLop WHERE MaLop = lh.MaLop) AS SoThanhVien
+            FROM LopHoc lh
+            LEFT JOIN NguoiDung nd ON lh.GiaoVien = nd.MaNguoiDung
+            INNER JOIN ThanhVienLop tvl ON lh.MaLop = tvl.MaLop AND tvl.MaNguoiDung = ?
+            ORDER BY lh.TenLop ASC
+        `;
+        db.query(sql, [userId], (err, results) => {
+            if (err) {
+                console.error('Lỗi truy vấn danh sách lớp:', err);
+                return res.status(500).json({ message: 'Lỗi truy vấn danh sách lớp', error: err.message });
+            }
+            // Log kết quả truy vấn để kiểm tra
+            console.log('Kết quả truy vấn lớp:', results);
+            res.json(Array.isArray(results) ? results : []);
+        });
+    } else if (role === 'admin' || role === 'giangvien') {
+        // Nếu là admin hoặc giảng viên thì trả về tất cả lớp học
+        const sql = `
+            SELECT 
+                lh.MaLop, 
+                lh.MaLopHoc, 
+                lh.TenLop, 
+                lh.ChuyenNganh, 
+                lh.KhoaHoc, 
+                lh.GiaoVien,
+                nd.HoTen AS TenGiaoVien,
+                (SELECT COUNT(*) FROM ThanhVienLop WHERE MaLop = lh.MaLop) AS SoThanhVien
+            FROM LopHoc lh
+            LEFT JOIN NguoiDung nd ON lh.GiaoVien = nd.MaNguoiDung
+            ORDER BY lh.TenLop ASC
+        `;
+        db.query(sql, (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn danh sách lớp', error: err.message });
+            // Nếu không có lớp nào, trả về mảng rỗng thay vì null/undefined
+            res.json(Array.isArray(results) ? results : []);
+        });
+    } else {
+        // Nếu không xác định được vai trò thì trả về mảng rỗng
+        return res.json([]);
+    }
 };
 
 // Thêm thành viên vào lớp (POST /api/lop/thanhvienlop)
@@ -246,6 +430,21 @@ exports.removeThanhVienLop = (req, res) => {
             if (err) return res.status(500).json({ message: 'Lỗi xóa thành viên khỏi lớp.' });
             if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy thành viên để xóa.' });
             return res.json({ success: true, message: 'Xóa thành viên khỏi lớp thành công.' });
+        }
+    );
+};
+
+// Tìm kiếm lớp học theo tên hoặc mã lớp
+exports.searchLop = (req, res) => {
+    const keyword = req.query.q || '';
+    db.query(
+        `SELECT * FROM LopHoc WHERE TenLop LIKE ? OR MaLopHoc LIKE ? ORDER BY TenLop ASC`,
+        [`%${keyword}%`, `%${keyword}%`],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({ message: 'Lỗi truy vấn tìm kiếm lớp', error: err.message });
+            }
+            res.json(results);
         }
     );
 };

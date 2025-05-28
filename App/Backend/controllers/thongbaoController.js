@@ -5,7 +5,7 @@ exports.getAllThongBao = (req, res) => {
     const sql = `
         SELECT 
             tb.MaThongBao,
-            tb.MaLop,
+            -- tb.MaLop,  // XÓA trường này khỏi kết quả trả về
             lh.TenLop,
             tb.NguoiGui,
             nd.HoTen AS TenNguoiGui,
@@ -29,9 +29,17 @@ exports.getAllThongBao = (req, res) => {
             }
             // Trả về cả trường TepDinhKem (link hoặc tên file đính kèm)
             return {
-                ...row,
+                // Không trả về MaLop
+                // MaLop: row.MaLop, // XÓA dòng này nếu có
+                TenLop: row.TenLop,
+                NguoiGui: row.NguoiGui,
+                TenNguoiGui: row.TenNguoiGui,
+                TieuDe: row.TieuDe,
+                NoiDung: row.NoiDung,
+                ThoiGianGui: row.ThoiGianGui,
                 AnhDinhKem: anh || null,
-                TepDinhKem: row.TepDinhKem || null
+                TepDinhKem: row.TepDinhKem || null,
+                MaThongBao: row.MaThongBao
             };
         });
         res.json(data);
@@ -52,12 +60,14 @@ exports.createThongBao = (req, res) => {
     if (link && typeof link === 'string' && link.trim() !== '') {
         TepDinhKem = link.trim();
     }
-    if (!MaLop || !NguoiGui || !TieuDe) {
-        return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    // Chỉ kiểm tra NguoiGui và TieuDe
+    if (!NguoiGui || !TieuDe) {
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ các trường: Tiêu đề, Nội dung.' });
     }
+    // Nếu không có MaLop, truyền null vào SQL
     db.query(
         'INSERT INTO ThongBao (MaLop, NguoiGui, TieuDe, NoiDung, AnhDinhKem, TepDinhKem) VALUES (?, ?, ?, ?, ?, ?)',
-        [MaLop, NguoiGui, TieuDe, NoiDung || '', AnhDinhKem || null, TepDinhKem || null],
+        [MaLop || null, NguoiGui, TieuDe, NoiDung || '', AnhDinhKem || null, TepDinhKem || null],
         (err, result) => {
             if (err) return res.status(500).json({ message: 'Lỗi thêm thông báo', error: err.message });
             res.json({
@@ -77,7 +87,6 @@ exports.updateThongBao = (req, res) => {
     if (req.file) {
         AnhDinhKem = req.file.filename;
     }
-    // Ưu tiên lấy link nếu có, nếu không lấy TepDinhKem
     let tepDinhKemValue = null;
     if (typeof link !== 'undefined' && link !== '') {
         tepDinhKemValue = link;
@@ -86,12 +95,13 @@ exports.updateThongBao = (req, res) => {
     } else {
         tepDinhKemValue = null;
     }
-    if (!MaLop || !NguoiGui || !TieuDe) {
-        return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    // Chỉ kiểm tra NguoiGui và TieuDe
+    if (!NguoiGui || !TieuDe) {
+        return res.status(400).json({ message: 'Vui lòng nhập đầy đủ các trường: Tiêu đề, Nội dung.' });
     }
     db.query(
         'UPDATE ThongBao SET MaLop=?, NguoiGui=?, TieuDe=?, NoiDung=?, AnhDinhKem=?, TepDinhKem=? WHERE MaThongBao=?',
-        [MaLop, NguoiGui, TieuDe, NoiDung || '', AnhDinhKem, tepDinhKemValue, req.params.id],
+        [MaLop || null, NguoiGui, TieuDe, NoiDung || '', AnhDinhKem, tepDinhKemValue, req.params.id],
         (err, result) => {
             if (err) return res.status(500).json({ message: 'Lỗi cập nhật thông báo', error: err.message });
             res.json({
@@ -112,4 +122,22 @@ exports.deleteThongBao = (req, res) => {
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy thông báo để xóa' });
         res.json({ success: true });
     });
+};
+
+// Tìm kiếm thông báo theo tiêu đề hoặc tên người gửi
+exports.searchThongBao = (req, res) => {
+    const keyword = req.query.q || '';
+    db.query(
+        `SELECT tb.*, nd.HoTen AS TenNguoiGui, lh.TenLop
+         FROM ThongBao tb
+         LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
+         LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
+         WHERE tb.TieuDe LIKE ? OR nd.HoTen LIKE ?
+         ORDER BY tb.ThoiGianGui DESC`,
+        [`%${keyword}%`, `%${keyword}%`],
+        (err, rows) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn thông báo', error: err });
+            res.json(rows);
+        }
+    );
 };

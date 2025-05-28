@@ -161,4 +161,51 @@ exports.deleteDanhGia = (req, res) => {
     );
 };
 
+// Tìm kiếm đánh giá theo tên người gửi hoặc nội dung
+exports.searchDanhGia = (req, res) => {
+    const keyword = req.query.q || '';
+    db.query(
+        `SELECT 
+            dg.MaDanhGia,
+            cs.HoTen AS TenCanSu,
+            dg.TieuChi,
+            dg.NoiDung,
+            ng.HoTen AS TenNguoiGui,
+            dg.NgayGui,
+            dg.NguoiGui
+         FROM DanhGiaCanSu dg
+         LEFT JOIN NguoiDung cs ON dg.CanSuDuocDanhGia = cs.MaNguoiDung
+         LEFT JOIN NguoiDung ng ON dg.NguoiGui = ng.MaNguoiDung
+         WHERE ng.HoTen LIKE ? OR dg.NoiDung LIKE ?
+         ORDER BY dg.NgayGui DESC`,
+        [`%${keyword}%`, `%${keyword}%`],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn đánh giá', error: err.message });
+            // Nếu TieuChi là số thì gán nhãn, nếu là chuỗi thì trả về đúng chuỗi đó
+            const mucLabel = {
+                1: 'Cần cải thiện',
+                2: 'Trung bình',
+                3: 'Khá',
+                4: 'Tốt',
+                5: 'Xuất sắc'
+            };
+            const data = (results || []).map(dg => {
+                let label = '';
+                if (!isNaN(Number(dg.TieuChi)) && mucLabel[Number(dg.TieuChi)]) {
+                    label = mucLabel[Number(dg.TieuChi)];
+                } else if (typeof dg.TieuChi === 'string') {
+                    label = dg.TieuChi;
+                }
+                return {
+                    ...dg,
+                    TenNguoiGui: dg.NguoiGui ? (dg.TenNguoiGui || '') : 'Ẩn danh',
+                    MucLabel: label,
+                    AnDanh: !dg.NguoiGui
+                };
+            });
+            res.json(data);
+        }
+    );
+};
+
 

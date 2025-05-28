@@ -27,13 +27,16 @@ const upload = multer({ storage: storage });
 // Lấy danh sách thông báo (ai cũng xem được)
 router.get('/', thongbaoController.getAllThongBao);
 
-// Thêm thông báo mới (chỉ admin và giangvien)
-router.post('/', requireAuth, authRole(['admin', 'giangvien']), upload.single('AnhDinhKem'), thongbaoController.createThongBao);
+// Thêm thông báo mới (admin, giangvien, cansu)
+router.post('/', requireAuth, authRole(['admin', 'giangvien', 'cansu']), upload.single('AnhDinhKem'), thongbaoController.createThongBao);
 
-// Sửa thông báo (chỉ admin và giangvien)
-router.put('/:id', requireAuth, authRole(['admin', 'giangvien']), upload.single('AnhDinhKem'), thongbaoController.updateThongBao);
+// Sửa thông báo (admin, giangvien, cansu)
+router.put('/:id', requireAuth, authRole(['admin', 'giangvien', 'cansu']), upload.single('AnhDinhKem'), thongbaoController.updateThongBao);
 
-// Xóa thông báo (chỉ admin và giangvien)
-router.delete('/:id', requireAuth, authRole(['admin', 'giangvien']), thongbaoController.deleteThongBao);
+// Xóa thông báo (admin, giangvien, cansu)
+router.delete('/:id', requireAuth, authRole(['admin', 'giangvien', 'cansu']), thongbaoController.deleteThongBao);
+
+// Tìm kiếm thông báo (ai cũng có thể tìm kiếm)
+router.get('/search', thongbaoController.searchThongBao);
 
 module.exports = router;

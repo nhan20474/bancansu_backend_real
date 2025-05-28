@@ -141,3 +141,28 @@ exports.countCanSu = (req, res) => {
         res.json({ count: results[0].count });
     });
 };
+
+// Thêm tìm kiếm cán sự theo tên cán sự hoặc tên lớp (ai cũng tìm được)
+exports.searchCanSu = (req, res) => {
+    const keyword = req.query.q || '';
+    const sql = `
+        SELECT 
+            cs.MaCanSu,
+            cs.MaLop,
+            lh.TenLop,
+            cs.MaNguoiDung,
+            nd.HoTen AS TenCanSu,
+            cs.ChucVu,
+            cs.TuNgay,
+            cs.DenNgay
+        FROM CanSu cs
+        LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+        LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+        WHERE nd.HoTen LIKE ? OR lh.TenLop LIKE ?
+        ORDER BY lh.TenLop ASC
+    `;
+    db.query(sql, [`%${keyword}%`, `%${keyword}%`], (err, rows) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn cán sự', error: err });
+        res.json(rows);
+    });
+};

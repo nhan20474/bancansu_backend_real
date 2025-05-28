@@ -28,6 +28,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// Tìm kiếm nhiệm vụ (ai cũng xem được)
+router.get('/search', nhiemvuController.searchNhiemVu);
+
 // Lấy danh sách tất cả nhiệm vụ (ai cũng xem được)
 router.get('/', nhiemvuController.getAllNhiemVu);
 
