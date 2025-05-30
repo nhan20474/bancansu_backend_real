@@ -186,7 +186,11 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (2, 24, 0),
 (2, 25, 0),
 (2, 26, 0),
+<<<<<<< HEAD
 (2, 27, 0);
+=======
+(2, 27, 0)
+>>>>>>> f4fe4153192b2639353824893532ea32423556e8
 
 
 -- Đảm bảo userId 3 là thành viên lớp
@@ -211,8 +215,12 @@ INSERT INTO ThongBao (NguoiGui, TieuDe, NoiDung, TepDinhKem, AnhDinhKem) VALUES
 
 -- Đánh giá cán sự mẫu
 INSERT INTO DanhGiaCanSu (NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung) VALUES
+<<<<<<< HEAD
 (4, 5, '5', N'Làm việc rất tốt'),
 (6, 5, '5', N'Hoàn thành nhiệm vụ đúng hạn');
+=======
+
+>>>>>>> f4fe4153192b2639353824893532ea32423556e8
 
 -- Thống kê mẫu
 INSERT INTO ThongKe (MaLop, MaNguoiDung, TongNhiemVu, DaHoanThanh, DanhGiaTB) VALUES
