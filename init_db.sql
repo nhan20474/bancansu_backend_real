@@ -80,9 +80,11 @@ CREATE TABLE ChiTietNhiemVu (
 );
 
 -- 7. BẢNG THÔNG BÁO
+drop table thongbao
+
 CREATE TABLE ThongBao (
     MaThongBao INT AUTO_INCREMENT PRIMARY KEY,
-    MaLop INT NOT NULL,
+    MaLop INT  ,
     NguoiGui INT NOT NULL,
     TieuDe NVARCHAR(200) NOT NULL,
     NoiDung NVARCHAR(1000),
@@ -137,7 +139,7 @@ INSERT INTO NguoiDung (MaSoSV, HoTen, MatKhau, VaiTro, Email, SoDienThoai, HinhA
 ('2280060830', N'Điệp Cẩm Hào', '2280060830', 'sinhvien', '2280060830@hutech.edu.vn', '', NULL, 1),
 ('2280063328', N'Hoàng Quốc Hậu', '2280063328', 'sinhvien', '2280063328@hutech.edu.vn', '', NULL, 1),
 ('2280063935', N'Nguyễn Hữu Trí', '2280063935', 'sinhvien', '2280063935@hutech.edu.vn', '', NULL, 1),
-('2280609796', N'Lê Huỳnh Công Vinh', '2280609796', 'sinhvien', '2280609796b@hutech.edu.vn', '', NULL, 1),
+('2280609796', N'Lê Huỳnh Công Vinh', '2280069796', 'sinhvien', '2280069796b@hutech.edu.vn', '', NULL, 1),
 ('2280060935', N'Nguyễn Hoàng Quang', '2280060935', 'sinhvien', '2280060935a@hutech.edu.vn', '', NULL, 1),
 ('2280060225', N'Phan Hoài Bảo', '2280060225', 'sinhvien', '2280060225@hutech.edu.vn', '', NULL, 1),
 ('2280061109', N'Nguyễn Phi Hùng', '2280061109', 'sinhvien', '2280061109@hutech.edu.vn', '', NULL, 1),
@@ -172,7 +174,6 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (1, 12, 0),
 (1, 13, 0),
 (1, 14, 0),
-<<<<<<< HEAD
 (2, 15, 0),
 (2, 16, 0),
 (2, 17, 0),
@@ -185,23 +186,12 @@ INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES
 (2, 24, 0),
 (2, 25, 0),
 (2, 26, 0),
-(2, 27, 0)
-=======
-(1, 15, 0),
-(1, 16, 0),
-(1, 17, 0),
-(1, 18, 0),
-(1, 19, 0),
-(1, 20, 0),
-(1, 21, 0),
-(1, 22, 0),
-(1, 23, 0),
-(1, 24, 0),
-(1, 25, 0),
-(1, 26, 0),
-(1, 27, 0)
->>>>>>> ebd7fe923032b93a4c817a81c2286a50f038c9d2
+(2, 27, 0);
 
+
+-- Đảm bảo userId 3 là thành viên lớp
+INSERT IGNORE INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES (1, 3, 1);
+INSERT IGNORE INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES (1, 4, 0);
 
 -- Nhiệm vụ mẫu
 INSERT INTO NhiemVu (MaLop, NguoiGiao, TieuDe, MoTa, HanHoanThanh, DoUuTien, TepDinhKem) VALUES
@@ -215,16 +205,21 @@ INSERT INTO ChiTietNhiemVu (MaNhiemVu, MaNguoiDung, TrangThai, GhiChuTienDo, Tep
 (2, 5, 'Đã hoàn thành', N'Đã nộp', NULL);
 
 -- Thông báo mẫu
-INSERT INTO ThongBao (MaLop, NguoiGui, TieuDe, NoiDung, TepDinhKem, AnhDinhKem) VALUES
-(1, 2, N'Chào mừng năm học mới', N'Chúc các bạn năm học mới thành công!', NULL, NULL),
-(1, 5, N'Lịch học tuần này', N'Các bạn xem lịch học trên website.', NULL, NULL);
+INSERT INTO ThongBao (NguoiGui, TieuDe, NoiDung, TepDinhKem, AnhDinhKem) VALUES
+(2, N'Chào mừng năm học mới', N'Chúc các bạn năm học mới thành công!', NULL, NULL),
+(5, N'Lịch học tuần này', N'Các bạn xem lịch học trên website.', NULL, NULL);
 
 -- Đánh giá cán sự mẫu
 INSERT INTO DanhGiaCanSu (NguoiGui, CanSuDuocDanhGia, TieuChi, NoiDung) VALUES
-(4, 5, N'Tích cực', N'Làm việc rất tốt'),
-(6, 5, N'Chăm chỉ', N'Hoàn thành nhiệm vụ đúng hạn');
+(4, 5, '5', N'Làm việc rất tốt'),
+(6, 5, '5', N'Hoàn thành nhiệm vụ đúng hạn');
 
 -- Thống kê mẫu
 INSERT INTO ThongKe (MaLop, MaNguoiDung, TongNhiemVu, DaHoanThanh, DanhGiaTB) VALUES
 (1, 5, 10, 9, 4.5),
 (1, 6, 10, 8, 4.0);
+
+ALTER TABLE DanhGiaCanSu ADD COLUMN AnDanhToken VARCHAR(64) DEFAULT NULL;
+
+-- Dữ liệu cán sự
+INSERT INTO CanSu (MaLop, MaNguoiDung, ChucVu) VALUES (3, 4, 'Cán sự');

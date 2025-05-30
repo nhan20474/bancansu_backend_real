@@ -12,10 +12,7 @@ const uploadDir = 'C:\\GitHub\\bancansu_backend_real\\uploads';
 // Ensure the directory exists before using it
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
-    console.log(`Created upload directory at: ${uploadDir}`);
-} else {
-    console.log(`Using existing upload directory at: ${uploadDir}`);
-}
+} 
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -31,8 +28,8 @@ const upload = multer({ storage: storage });
 // Tìm kiếm nhiệm vụ (ai cũng xem được)
 router.get('/search', nhiemvuController.searchNhiemVu);
 
-// Lấy danh sách tất cả nhiệm vụ (ai cũng xem được)
-router.get('/', nhiemvuController.getAllNhiemVu);
+// Lấy danh sách tất cả nhiệm vụ (yêu cầu xác thực)
+router.get('/', requireAuth, require('../controllers/nhiemvuController').getAllNhiemVu);
 
 // Lấy danh sách lớp học cho nhiệm vụ - Đặt trước route động /:id (ai cũng xem được)
 router.get('/lophoc', nhiemvuController.getLopHoc);

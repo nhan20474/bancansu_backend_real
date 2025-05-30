@@ -23,23 +23,78 @@ function ensureUploadDirExists() {
 
 // Call this when the module loads to ensure the directory exists
 const uploadDir = ensureUploadDirExists();
-console.log('Using upload directory:', uploadDir);
 
 // Lấy danh sách tất cả nhiệm vụ
 exports.getAllNhiemVu = (req, res) => {
-    db.query(
-        `SELECT nv.MaNhiemVu, nv.TieuDe, nv.MoTa, nv.HanHoanThanh, nv.DoUuTien, nv.TepDinhKem, nv.NgayTao, nv.MaLop, nv.NguoiGiao, 
-                lh.TenLop, nd.HoTen AS TenNguoiGiao
-         FROM NhiemVu nv
-         LEFT JOIN LopHoc lh ON nv.MaLop = lh.MaLop
-         LEFT JOIN NguoiDung nd ON nv.NguoiGiao = nd.MaNguoiDung
-         ORDER BY nv.HanHoanThanh DESC`,
-        (err, results) => {
-            if (err) return res.status(500).json({ message: 'Lỗi truy vấn nhiệm vụ', error: err.message });
-            // Đảm bảo luôn trả về TenNguoiGiao (tên người giao) trong kết quả
-            res.json(results || []);
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    // Nếu không có userId hoặc role, trả về lỗi 401
+    if (!userId || !role) {
+        return res.status(401).json({ message: 'Thiếu thông tin xác thực (userId, role).' });
+    }
+
+    // Thêm log để kiểm tra phân quyền và truy vấn
+    console.log('getAllNhiemVu:', { userId, role });
+
+    let sql = '';
+    let params = [];
+
+    if (role === 'admin' || role === 'giangvien') {
+        sql = `
+            SELECT nv.MaNhiemVu, nv.TieuDe, nv.MoTa, nv.HanHoanThanh, nv.DoUuTien, nv.TepDinhKem, nv.NgayTao, nv.MaLop, nv.NguoiGiao, 
+                   lh.TenLop, nd.HoTen AS TenNguoiGiao
+            FROM NhiemVu nv
+            LEFT JOIN LopHoc lh ON nv.MaLop = lh.MaLop
+            LEFT JOIN NguoiDung nd ON nv.NguoiGiao = nd.MaNguoiDung
+            ORDER BY nv.HanHoanThanh DESC
+        `;
+        console.log('SQL for admin/giangvien:', sql);
+    } else if (role === 'cansu') {
+        sql = `
+            SELECT nv.MaNhiemVu, nv.TieuDe, nv.MoTa, nv.HanHoanThanh, nv.DoUuTien, nv.TepDinhKem, nv.NgayTao, nv.MaLop, nv.NguoiGiao, 
+                   lh.TenLop, nd.HoTen AS TenNguoiGiao
+            FROM NhiemVu nv
+            LEFT JOIN LopHoc lh ON nv.MaLop = lh.MaLop
+            LEFT JOIN NguoiDung nd ON nv.NguoiGiao = nd.MaNguoiDung
+            WHERE nv.MaLop IN (SELECT MaLop FROM CanSu WHERE MaNguoiDung = ?)
+            ORDER BY nv.HanHoanThanh DESC
+        `;
+        params = [userId];
+        console.log('SQL for cansu:', sql, 'params:', params);
+    } else if (role === 'sinhvien') {
+        sql = `
+            SELECT nv.MaNhiemVu, nv.TieuDe, nv.MoTa, nv.HanHoanThanh, nv.DoUuTien, nv.TepDinhKem, nv.NgayTao, nv.MaLop, nv.NguoiGiao, 
+                   lh.TenLop, nd.HoTen AS TenNguoiGiao
+            FROM NhiemVu nv
+            LEFT JOIN LopHoc lh ON nv.MaLop = lh.MaLop
+            LEFT JOIN NguoiDung nd ON nv.NguoiGiao = nd.MaNguoiDung
+            WHERE nv.MaLop IN (SELECT MaLop FROM ThanhVienLop WHERE MaNguoiDung = ?)
+            ORDER BY nv.HanHoanThanh DESC
+        `;
+        params = [userId];
+        console.log('SQL for sinhvien:', sql, 'params:', params);
+    } else {
+        // Không xác định vai trò, trả về rỗng
+        return res.json([]);
+    }
+
+    db.query(sql, params, (err, results) => {
+        if (err) {
+            console.error('Lỗi truy vấn nhiệm vụ:', err);
+            return res.status(500).json({ message: 'Lỗi truy vấn nhiệm vụ', error: err.message });
         }
-    );
+        console.log('Kết quả nhiệm vụ:', results);
+        res.json(results || []);
+    });
 };
 
 // Lấy chi tiết một nhiệm vụ theo id
@@ -112,10 +167,10 @@ exports.createNhiemVu = (req, res) => {
         }
         
         // Log detailed request information
-        console.log('CREATE NHIEMVU REQUEST:');
-        console.log('Headers:', JSON.stringify(req.headers));
-        console.log('Body:', JSON.stringify(req.body));
-        console.log('File:', req.file ? JSON.stringify(req.file) : 'No file');
+        // console.log('CREATE NHIEMVU REQUEST:');
+        // console.log('Headers:', JSON.stringify(req.headers));
+        // console.log('Body:', JSON.stringify(req.body));
+        // console.log('File:', req.file ? JSON.stringify(req.file) : 'No file');
         
         // Basic request validation
         if (!req.body) {
@@ -135,16 +190,16 @@ exports.createNhiemVu = (req, res) => {
         let TepDinhKem = null;
         if (req.file && req.file.filename) {
             TepDinhKem = req.file.filename;
-            console.log('File uploaded:', TepDinhKem);
+            // console.log('File uploaded:', TepDinhKem);
         } else if (req.body.TepDinhKem) {
             TepDinhKem = req.body.TepDinhKem;
-            console.log('File reference provided:', TepDinhKem);
+            // console.log('File reference provided:', TepDinhKem);
         }
         
         // Log final data being sent to SQL
-        console.log('SQL Input Data:', {
-            TieuDe, MoTa, HanHoanThanh, DoUuTien, TepDinhKem, MaLop, NguoiGiao
-        });
+        // console.log('SQL Input Data:', {
+        //     TieuDe, MoTa, HanHoanThanh, DoUuTien, TepDinhKem, MaLop, NguoiGiao
+        // });
         
         // Extra basic validation
         if (!TieuDe.trim()) return res.status(400).json({ message: 'Thiếu tiêu đề nhiệm vụ' });
@@ -182,7 +237,7 @@ exports.createNhiemVu = (req, res) => {
                     });
                 }
                 
-                console.log('NHIEMVU CREATED SUCCESSFULLY:', result);
+                // console.log('NHIEMVU CREATED SUCCESSFULLY:', result);
                 res.json({ 
                     success: true, 
                     id: result.insertId, 
@@ -191,7 +246,7 @@ exports.createNhiemVu = (req, res) => {
             }
         );
     } catch (error) {
-        console.error('EXCEPTION IN createNhiemVu:', error);
+        // console.error('EXCEPTION IN createNhiemVu:', error);
         res.status(500).json({ 
             message: 'Lỗi không xác định khi thêm nhiệm vụ', 
             error: error.message
@@ -272,15 +327,15 @@ exports.nopBai = (req, res) => {
     // If a file was uploaded, verify it exists
     if (req.file) {
         const filePath = path.join(uploadDir, req.file.filename);
-        console.log(`Checking uploaded file at: ${filePath}`);
+        // console.log(`Checking uploaded file at: ${filePath}`);
         if (!fs.existsSync(filePath)) {
-            console.error(`Uploaded file not found at: ${filePath}`);
+            // console.error(`Uploaded file not found at: ${filePath}`);
             return res.status(500).json({ 
                 message: 'File đã được upload nhưng không tìm thấy trong hệ thống',
                 path: filePath
             });
         }
-        console.log(`File verified at: ${filePath}`);
+        // console.log(`File verified at: ${filePath}`);
     }
     
     // Lấy tên file nộp bài nếu có

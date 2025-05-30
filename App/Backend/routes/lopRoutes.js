@@ -17,6 +17,22 @@ router.get('/', requireAuth, lopController.getAllLop);
 router.get('/:id', requireAuth, lopController.getLopById);
 router.get('/:id/thanhvien', requireAuth, lopController.getThanhVienLop);
 
+// Lấy tất cả thành viên của tất cả lớp (nếu cần)
+router.get('/thanhvien/all', requireAuth, (req, res) => {
+    const db = require('../config/db');
+    db.query(
+        `SELECT tvl.MaLop, lh.TenLop, nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+         FROM ThanhVienLop tvl
+         JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
+         JOIN LopHoc lh ON tvl.MaLop = lh.MaLop
+         ORDER BY tvl.MaLop, tvl.LaCanSu DESC, nd.HoTen ASC`,
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err.message });
+            res.json(Array.isArray(results) ? results : []);
+        }
+    );
+});
+
 // Chỉ cho phép admin và giangvien thêm/sửa/xóa lớp học
 router.post('/', requireAuth, authRole(['admin', 'giangvien']), lopController.createLop);
 router.put('/:id', requireAuth, authRole(['admin', 'giangvien']), lopController.updateLop);

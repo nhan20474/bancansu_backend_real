@@ -2,24 +2,134 @@ const db = require('../config/db');
 
 // Lấy danh sách cán sự
 exports.getAllCanSu = (req, res) => {
-    const sql = `
-        SELECT 
-            cs.MaCanSu,
-            cs.MaLop,
-            lh.TenLop,
-            cs.MaNguoiDung,
-            nd.HoTen AS TenCanSu,
-            cs.ChucVu,
-            cs.TuNgay,
-            cs.DenNgay
-        FROM CanSu cs
-        LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
-        LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
-    `;
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn cán sự' });
-        res.json(results);
-    });
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    let sql = '';
+    let params = [];
+
+    if (role === 'admin') {
+        // Xem tất cả cán sự
+        sql = `
+            SELECT 
+                cs.MaCanSu,
+                cs.MaLop,
+                lh.TenLop,
+                cs.MaNguoiDung,
+                nd.HoTen AS TenCanSu,
+                cs.ChucVu,
+                cs.TuNgay,
+                cs.DenNgay
+            FROM CanSu cs
+            LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+            LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+        `;
+        db.query(sql, params, (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn cán sự' });
+            res.json(results);
+        });
+    } else if (role === 'giangvien') {
+        // Chỉ xem cán sự của các lớp mình chủ nhiệm
+        sql = `
+            SELECT 
+                cs.MaCanSu,
+                cs.MaLop,
+                lh.TenLop,
+                cs.MaNguoiDung,
+                nd.HoTen AS TenCanSu,
+                cs.ChucVu,
+                cs.TuNgay,
+                cs.DenNgay
+            FROM CanSu cs
+            LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+            LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+            WHERE lh.GiaoVien = ?
+        `;
+        params = [userId];
+        db.query(sql, params, (err, results) => {
+            if (err) return res.status(500).json({ message: 'Lỗi truy vấn cán sự' });
+            res.json(results);
+        });
+    } else if (role === 'sinhvien') {
+        // Lấy tất cả các lớp mà user này là thành viên
+        db.query(
+            'SELECT MaLop FROM ThanhVienLop WHERE MaNguoiDung = ?',
+            [userId],
+            (err, lopRows) => {
+                if (err) return res.status(500).json({ message: 'Lỗi truy vấn lớp thành viên', error: err.message });
+                const lopIds = lopRows.map(r => r.MaLop);
+                if (lopIds.length === 0) return res.json([]);
+                // Trả về cán sự của các lớp này
+                db.query(
+                    `
+                    SELECT 
+                        cs.MaCanSu,
+                        cs.MaLop,
+                        lh.TenLop,
+                        cs.MaNguoiDung,
+                        nd.HoTen AS TenCanSu,
+                        cs.ChucVu,
+                        cs.TuNgay,
+                        cs.DenNgay
+                    FROM CanSu cs
+                    LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+                    LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+                    WHERE cs.MaLop IN (?)
+                    `,
+                    [lopIds],
+                    (err2, results) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn cán sự', error: err2.message });
+                        res.json(results);
+                    }
+                );
+            }
+        );
+    } else if (role === 'cansu') {
+        // Lấy danh sách MaLop user là cán sự
+        db.query(
+            'SELECT MaLop FROM CanSu WHERE MaNguoiDung = ?',
+            [userId],
+            (err, lopRows) => {
+                if (err) return res.status(500).json({ message: 'Lỗi truy vấn lớp cán sự', error: err.message });
+                const lopIds = lopRows.map(r => r.MaLop);
+                if (lopIds.length === 0) return res.json([]);
+                // Trả về cán sự của các lớp này
+                db.query(
+                    `
+                    SELECT 
+                        cs.MaCanSu,
+                        cs.MaLop,
+                        lh.TenLop,
+                        cs.MaNguoiDung,
+                        nd.HoTen AS TenCanSu,
+                        cs.ChucVu,
+                        cs.TuNgay,
+                        cs.DenNgay
+                    FROM CanSu cs
+                    LEFT JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+                    LEFT JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+                    WHERE cs.MaLop IN (?)
+                    `,
+                    [lopIds],
+                    (err2, results) => {
+                        if (err2) return res.status(500).json({ message: 'Lỗi truy vấn cán sự', error: err2.message });
+                        res.json(results);
+                    }
+                );
+            }
+        );
+    } else {
+        // Không xác định vai trò, trả về rỗng
+        return res.json([]);
+    }
 };
 
 // Thêm cán sự mới
@@ -60,7 +170,15 @@ exports.addCanSu = (req, res) => {
                         [result.insertId],
                         (err2, rows) => {
                             if (err2) return res.status(500).json({ message: 'Lỗi truy vấn sau khi thêm', error: err2.message });
-                            res.json({ success: true, canSu: rows[0] });
+                            // Thêm người dùng vào bảng ThanhVienLop nếu chưa có
+                            db.query(
+                                'INSERT IGNORE INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES (?, ?, ?)',
+                                [MaLop, MaNguoiDung, 1],
+                                (err3) => {
+                                    if (err3) return res.status(500).json({ message: 'Lỗi thêm vào ThanhVienLop', error: err3.message });
+                                    res.json({ success: true, canSu: rows[0] });
+                                }
+                            );
                         }
                     );
                 }

@@ -43,6 +43,7 @@ app.use('/api/thongbao', thongbaoRoutes);
 app.use('/api/danhgia', danhgiaRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/forgot-password', forgotPasswordRoutes);
+app.use('/api/auth/forgot-password', forgotPasswordRoutes); // <-- This line fixes the 404
 app.use('/api/change-password', changePasswordRoutes);
 app.use('/api/chitietnhiemvu', chitietnhiemvuRoutes);
 app.use('/api/thongke', thongkeRoutes);

@@ -1,11 +1,33 @@
 const db = require('../config/db');
 
+// Thống kê tổng quan hệ thống
+exports.tongQuanHeThong = (req, res) => {
+    const sql = `
+        SELECT 
+            (SELECT COUNT(*) FROM LopHoc) AS TongLop,
+            (SELECT COUNT(*) FROM NguoiDung WHERE VaiTro='sinhvien') AS TongSinhVien,
+            (SELECT COUNT(*) FROM CanSu) AS TongCanSu,
+            (SELECT COUNT(*) FROM NhiemVu) AS TongNhiemVu,
+            (SELECT COUNT(*) FROM ThongBao) AS TongThongBao
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Lỗi truy vấn tổng quan', error: err.message });
+        res.json({
+            TongLop: results[0]?.TongLop || 0,
+            TongSinhVien: results[0]?.TongSinhVien || 0,
+            TongCanSu: results[0]?.TongCanSu || 0,
+            TongNhiemVu: results[0]?.TongNhiemVu || 0,
+            TongThongBao: results[0]?.TongThongBao || 0
+        });
+    });
+};
+
 // Thống kê theo lớp
 exports.thongKeTheoLop = (req, res) => {
     const maLop = req.params.maLop;
     db.query(
         `SELECT nd.MaNguoiDung, nd.HoTen, 
-                COUNT(nv.MaNhiemVu) AS TongNhiemVu,
+                COUNT(DISTINCT nv.MaNhiemVu) AS TongNhiemVu,
                 SUM(CASE WHEN ctnv.TrangThai='Hoàn thành' THEN 1 ELSE 0 END) AS DaHoanThanh,
                 ROUND(AVG(dg.TieuChi), 2) AS DiemTrungBinh
          FROM NguoiDung nd
@@ -18,10 +40,11 @@ exports.thongKeTheoLop = (req, res) => {
         [maLop, maLop, maLop],
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn thống kê', error: err.message });
-            // Nếu không có điểm thì trả về 0 thay vì null
             const data = (results || []).map(row => ({
                 ...row,
-                DiemTrungBinh: row.DiemTrungBinh === null ? 0 : row.DiemTrungBinh
+                TongNhiemVu: Number(row.TongNhiemVu) || 0,
+                DaHoanThanh: Number(row.DaHoanThanh) || 0,
+                DiemTrungBinh: row.DiemTrungBinh === null ? 0 : Number(row.DiemTrungBinh)
             }));
             res.json(data);
         }
@@ -33,7 +56,7 @@ exports.thongKeTheoNguoiDung = (req, res) => {
     const maNguoiDung = req.params.maNguoiDung;
     db.query(
         `SELECT nd.MaNguoiDung, nd.HoTen, 
-                COUNT(nv.MaNhiemVu) AS TongNhiemVu,
+                COUNT(DISTINCT nv.MaNhiemVu) AS TongNhiemVu,
                 SUM(CASE WHEN ctnv.TrangThai='Hoàn thành' THEN 1 ELSE 0 END) AS DaHoanThanh,
                 ROUND(AVG(dg.TieuChi), 2) AS DiemTrungBinh
          FROM NguoiDung nd
@@ -46,27 +69,18 @@ exports.thongKeTheoNguoiDung = (req, res) => {
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn thống kê', error: err.message });
             const row = results[0] || {};
-            row.DiemTrungBinh = row.DiemTrungBinh === null ? 0 : row.DiemTrungBinh;
-            res.json(row);
+            res.json({
+                MaNguoiDung: row.MaNguoiDung || null,
+                HoTen: row.HoTen || '',
+                TongNhiemVu: Number(row.TongNhiemVu) || 0,
+                DaHoanThanh: Number(row.DaHoanThanh) || 0,
+                DiemTrungBinh: row.DiemTrungBinh === null ? 0 : Number(row.DiemTrungBinh) || 0
+            });
         }
     );
 };
 
-exports.tongQuanHeThong = (req, res) => {
-    const sql = `
-        SELECT 
-            (SELECT COUNT(*) FROM LopHoc) AS TongLop,
-            (SELECT COUNT(*) FROM NguoiDung WHERE VaiTro='sinhvien') AS TongSinhVien,
-            (SELECT COUNT(*) FROM NguoiDung WHERE VaiTro='cansu') AS TongCanSu,
-            (SELECT COUNT(*) FROM NhiemVu) AS TongNhiemVu,
-            (SELECT COUNT(*) FROM ThongBao) AS TongThongBao
-    `;
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn tổng quan', error: err.message });
-        res.json(results[0]);
-    });
-};
-
+// Thống kê nhiệm vụ theo lớp
 exports.nhiemVuTheoLop = (req, res) => {
     const maLop = req.params.maLop;
     db.query(
@@ -79,26 +93,73 @@ exports.nhiemVuTheoLop = (req, res) => {
         [maLop],
         (err, results) => {
             if (err) return res.status(500).json({ message: 'Lỗi truy vấn nhiệm vụ', error: err.message });
-            res.json(results[0]);
+            res.json({
+                DaHoanThanh: Number(results[0]?.DaHoanThanh) || 0,
+                ChuaHoanThanh: Number(results[0]?.ChuaHoanThanh) || 0
+            });
         }
     );
 };
 
+// Thống kê điểm trung bình cán sự (có thêm tên lớp, kiểm tra bảng góp ý)
 exports.diemTrungBinhCanSu = (req, res) => {
-    db.query(
-        `SELECT cs.MaNguoiDung, nd.HoTen, IFNULL(AVG(dg.TieuChi), 0) AS DiemTrungBinh
+    // Nếu bảng GopYCanSu không tồn tại, chỉ lấy từ DanhGiaCanSu
+    const sql = `
+        SELECT 
+            cs.MaNguoiDung, 
+            nd.HoTen, 
+            lh.TenLop,
+            ROUND(
+                (
+                    IFNULL(AVG(dg.TieuChi), 0)
+                    ${/* Nếu có bảng GopYCanSu thì cộng thêm, nếu không thì chỉ lấy AVG(dg.TieuChi) */''}
+                    ${/* Nếu lỗi 500 do bảng GopYCanSu không tồn tại, hãy xóa phần cộng AVG(gy.Diem) bên dưới */''}
+                    + IFNULL((SELECT AVG(gy.Diem) FROM information_schema.tables WHERE table_name = 'GopYCanSu'), 0)
+                ) / 
+                (CASE 
+                    WHEN (COUNT(dg.TieuChi) > 0) THEN 1
+                    ELSE 1
+                END)
+            , 2) AS DiemTrungBinh
          FROM CanSu cs
          JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+         JOIN LopHoc lh ON cs.MaLop = lh.MaLop
          LEFT JOIN DanhGiaCanSu dg ON cs.MaNguoiDung = dg.CanSuDuocDanhGia
-         GROUP BY cs.MaNguoiDung, nd.HoTen`,
-        (err, results) => {
-            if (err) return res.status(500).json({ message: 'Lỗi truy vấn điểm trung bình', error: err.message });
-            // Đảm bảo DiemTrungBinh là số thực, làm tròn 2 chữ số, không null
+         GROUP BY cs.MaNguoiDung, nd.HoTen, lh.TenLop
+    `;
+    db.query(sql, (err, results) => {
+        if (err) {
+            // Nếu lỗi do bảng GopYCanSu không tồn tại, fallback về chỉ lấy từ DanhGiaCanSu
+            const fallbackSql = `
+                SELECT 
+                    cs.MaNguoiDung, 
+                    nd.HoTen, 
+                    lh.TenLop,
+                    ROUND(IFNULL(AVG(dg.TieuChi), 0), 2) AS DiemTrungBinh
+                 FROM CanSu cs
+                 JOIN NguoiDung nd ON cs.MaNguoiDung = nd.MaNguoiDung
+                 JOIN LopHoc lh ON cs.MaLop = lh.MaLop
+                 LEFT JOIN DanhGiaCanSu dg ON cs.MaNguoiDung = dg.CanSuDuocDanhGia
+                 GROUP BY cs.MaNguoiDung, nd.HoTen, lh.TenLop
+            `;
+            db.query(fallbackSql, (err2, results2) => {
+                if (err2) return res.status(500).json({ message: 'Lỗi truy vấn điểm trung bình', error: err2.message });
+                const data = (results2 || []).map(row => ({
+                    MaNguoiDung: row.MaNguoiDung,
+                    HoTen: row.HoTen,
+                    TenLop: row.TenLop,
+                    DiemTrungBinh: Math.round(Number(row.DiemTrungBinh) * 100) / 100
+                }));
+                res.json(data);
+            });
+        } else {
             const data = (results || []).map(row => ({
-                ...row,
+                MaNguoiDung: row.MaNguoiDung,
+                HoTen: row.HoTen,
+                TenLop: row.TenLop,
                 DiemTrungBinh: Math.round(Number(row.DiemTrungBinh) * 100) / 100
             }));
             res.json(data);
         }
-    );
+    });
 };

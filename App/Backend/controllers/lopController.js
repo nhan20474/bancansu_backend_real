@@ -200,6 +200,9 @@ exports.getThanhVienLop = (req, res) => {
         role = req.query.role || req.headers['role'];
     }
 
+    // Log userId và role
+    console.log('getThanhVienLop:', { userId, role, maLop });
+
     if (!userId || !role) {
         return res.status(403).json({ message: 'Không xác thực được người dùng.' });
     }
@@ -228,6 +231,7 @@ exports.getThanhVienLop = (req, res) => {
             'SELECT MaLop FROM LopHoc WHERE MaLop = ? AND GiaoVien = ?',
             [maLop, userId],
             (err, rows) => {
+                console.log('Kiểm tra quyền giảng viên:', { userId, maLop, rows });
                 if (err) return res.status(500).json({ message: 'Lỗi kiểm tra quyền giảng viên', error: err.message });
                 if (!rows || rows.length === 0) {
                     return res.status(403).json({ message: 'Bạn không phải giảng viên chủ nhiệm lớp này.' });
@@ -256,6 +260,7 @@ exports.getThanhVienLop = (req, res) => {
             'SELECT 1 FROM ThanhVienLop WHERE MaLop = ? AND MaNguoiDung = ? LIMIT 1',
             [maLop, userId],
             (err, rows) => {
+                console.log('Kiểm tra thành viên lớp:', { userId, maLop, rows });
                 if (err) return res.status(500).json({ message: 'Lỗi kiểm tra thành viên lớp', error: err.message });
                 if (!rows || rows.length === 0) {
                     return res.status(403).json({ message: 'Bạn không phải thành viên lớp này.' });
@@ -284,6 +289,7 @@ exports.getThanhVienLop = (req, res) => {
             'SELECT 1 FROM CanSu WHERE MaLop = ? AND MaNguoiDung = ? LIMIT 1',
             [maLop, userId],
             (err, rows) => {
+                console.log('Kiểm tra quyền cán sự:', { userId, maLop, rows });
                 if (err) return res.status(500).json({ message: 'Lỗi kiểm tra quyền cán sự', error: err.message });
                 if (!rows || rows.length === 0) {
                     return res.status(403).json({ message: 'Bạn không phải cán sự lớp này.' });

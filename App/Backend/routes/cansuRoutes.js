@@ -9,7 +9,7 @@ const authRole = require('../middleware/authRole');
 // Thêm route tìm kiếm cán sự (ai cũng tìm được)
 router.get('/search', cansuController.searchCanSu);
 // Lấy danh sách ban cán sự, trả về tên cán sự và tên lớp (ai cũng xem được)
-router.get('/', cansuController.getAllCanSu);
+router.get('/', requireAuth, cansuController.getAllCanSu);
 
 // Đếm số lượng cán sự (ai cũng xem được)
 router.get('/count', cansuController.countCanSu);

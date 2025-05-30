@@ -3,10 +3,12 @@
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
-    "nodemailer": "^7.0.3"
+    "nodemailer": "^7.0.3",
+    "pdfkit": "^0.17.1"
   }
 }

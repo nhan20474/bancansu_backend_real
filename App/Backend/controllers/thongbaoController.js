@@ -2,26 +2,92 @@ const db = require('../config/db');
 
 // Lấy danh sách thông báo
 exports.getAllThongBao = (req, res) => {
-    const sql = `
-        SELECT 
-            tb.MaThongBao,
-            -- tb.MaLop,  // XÓA trường này khỏi kết quả trả về
-            lh.TenLop,
-            tb.NguoiGui,
-            nd.HoTen AS TenNguoiGui,
-            tb.TieuDe,
-            tb.NoiDung,
-            tb.ThoiGianGui,
-            tb.AnhDinhKem,
-            tb.TepDinhKem
-        FROM ThongBao tb
-        LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
-        LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
-        ORDER BY tb.ThoiGianGui DESC
-        LIMIT 20
-    `;
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Lỗi truy vấn thông báo' });
+    // Lấy userId và role từ req (ưu tiên req.user nếu có)
+    let userId = null;
+    let role = null;
+    if (req.user) {
+        userId = req.user.userId || req.user.MaNguoiDung;
+        role = req.user.role || req.user.VaiTro;
+    } else {
+        userId = req.query.userId || req.headers['user-id'];
+        role = req.query.role || req.headers['role'];
+    }
+
+    let sql = '';
+    let params = [];
+
+    if (role === 'admin') {
+        // Xem tất cả thông báo
+        sql = `
+            SELECT 
+                tb.MaThongBao,
+                lh.TenLop,
+                tb.NguoiGui,
+                nd.HoTen AS TenNguoiGui,
+                tb.TieuDe,
+                tb.NoiDung,
+                tb.ThoiGianGui,
+                tb.AnhDinhKem,
+                tb.TepDinhKem
+            FROM ThongBao tb
+            LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
+            LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
+            ORDER BY tb.ThoiGianGui DESC
+            LIMIT 20
+        `;
+    } else if (role === 'giangvien') {
+        // Xem thông báo của các lớp mình chủ nhiệm
+        sql = `
+            SELECT 
+                tb.MaThongBao,
+                lh.TenLop,
+                tb.NguoiGui,
+                nd.HoTen AS TenNguoiGui,
+                tb.TieuDe,
+                tb.NoiDung,
+                tb.ThoiGianGui,
+                tb.AnhDinhKem,
+                tb.TepDinhKem
+            FROM ThongBao tb
+            LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
+            LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
+            WHERE lh.GiaoVien = ?
+            ORDER BY tb.ThoiGianGui DESC
+            LIMIT 20
+        `;
+        params = [userId];
+    } else if (role === 'cansu' || role === 'sinhvien') {
+        // Xem thông báo của các lớp mình là thành viên
+        sql = `
+            SELECT 
+                tb.MaThongBao,
+                lh.TenLop,
+                tb.NguoiGui,
+                nd.HoTen AS TenNguoiGui,
+                tb.TieuDe,
+                tb.NoiDung,
+                tb.ThoiGianGui,
+                tb.AnhDinhKem,
+                tb.TepDinhKem
+            FROM ThongBao tb
+            LEFT JOIN NguoiDung nd ON tb.NguoiGui = nd.MaNguoiDung
+            LEFT JOIN LopHoc lh ON tb.MaLop = lh.MaLop
+            WHERE tb.MaLop IN (
+                SELECT tvl.MaLop FROM ThanhVienLop tvl WHERE tvl.MaNguoiDung = ?
+            )
+            ORDER BY tb.ThoiGianGui DESC
+            LIMIT 20
+        `;
+        params = [userId];
+    } else {
+        // Không xác định vai trò, trả về rỗng
+        return res.json([]);
+    }
+
+    db.query(sql, params, (err, results) => {
+        if (err) {
+            return res.status(500).json({ message: 'Lỗi truy vấn thông báo' });
+        }
         const data = results.map(row => {
             let anh = row.AnhDinhKem;
             if (anh && (anh.includes('/') || anh.includes('\\'))) {
@@ -48,9 +114,6 @@ exports.getAllThongBao = (req, res) => {
 
 // Thêm thông báo mới
 exports.createThongBao = (req, res) => {
-    console.log('req.body:', req.body);
-    console.log('req.file:', req.file);
-
     const { MaLop, NguoiGui, TieuDe, NoiDung, link } = req.body;
     let AnhDinhKem = null;
     let TepDinhKem = null;

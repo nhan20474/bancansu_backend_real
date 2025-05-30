@@ -8,9 +8,7 @@ const requireAuth = require('../middleware/requireAuth');
 const authRole = require('../middleware/authRole');
 
 const uploadDir = 'c:/GitHub/bancansu_backend_real/uploads';
-console.log('Đường dẫn uploadDir:', uploadDir);
 if (!fs.existsSync(uploadDir)) {
-    console.warn('Thư mục uploads KHÔNG tồn tại! Đang tạo mới ở:', uploadDir);
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 const storage = multer.diskStorage({
@@ -25,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Lấy danh sách thông báo (ai cũng xem được)
-router.get('/', thongbaoController.getAllThongBao);
+router.get('/', requireAuth, thongbaoController.getAllThongBao);
 
 // Thêm thông báo mới (admin, giangvien, cansu)
 router.post('/', requireAuth, authRole(['admin', 'giangvien', 'cansu']), upload.single('AnhDinhKem'), thongbaoController.createThongBao);
