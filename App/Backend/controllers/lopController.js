@@ -286,20 +286,18 @@ exports.getThanhVienLop = (req, res) => {
     // Cán sự: chỉ cần là cán sự của lớp này (không cần là thành viên)
     if (role === 'cansu') {
         db.query(
-            'SELECT 1 FROM CanSu WHERE MaLop = ? AND MaNguoiDung = ? LIMIT 1',
+            'SELECT 1 FROM ThanhVienLop WHERE MaLop = ? AND MaNguoiDung = ? AND LaCanSu = 1 LIMIT 1',
             [maLop, userId],
             (err, rows) => {
-                console.log('Kiểm tra quyền cán sự:', { userId, maLop, rows });
-                if (err) return res.status(500).json({ message: 'Lỗi kiểm tra quyền cán sự', error: err.message });
-                if (!rows || rows.length === 0) {
-                    return res.status(403).json({ message: 'Bạn không phải cán sự lớp này.' });
-                }
+                // ...existing code...
                 db.query(
-                    `SELECT nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, tvl.LaCanSu
+                    `SELECT 
+                        nd.MaNguoiDung, nd.MaSoSV, nd.HoTen, nd.VaiTro, nd.Email, nd.SoDienThoai, nd.HinhAnh, MAX(tvl.LaCanSu) AS LaCanSu
                      FROM ThanhVienLop tvl
                      JOIN NguoiDung nd ON tvl.MaNguoiDung = nd.MaNguoiDung
                      WHERE tvl.MaLop = ?
-                     ORDER BY tvl.LaCanSu DESC, nd.HoTen ASC`,
+                     GROUP BY nd.MaNguoiDung
+                     ORDER BY LaCanSu DESC, nd.HoTen ASC`,
                     [maLop],
                     (err2, results) => {
                         if (err2) return res.status(500).json({ message: 'Lỗi truy vấn thành viên lớp', error: err2.message });
@@ -451,6 +449,50 @@ exports.searchLop = (req, res) => {
                 return res.status(500).json({ message: 'Lỗi truy vấn tìm kiếm lớp', error: err.message });
             }
             res.json(results);
+        }
+    );
+};
+
+// Thêm cán sự vào lớp (KHÔNG insert mới nếu đã là thành viên, chỉ update LaCanSu)
+exports.addCanSuLop = (req, res) => {
+    const { MaLop, MaNguoiDung } = req.body;
+    if (!MaLop || !MaNguoiDung) {
+        return res.status(400).json({ message: 'Thiếu MaLop hoặc MaNguoiDung.' });
+    }
+    // Cập nhật VaiTro trước khi thêm/ghi nhận cán sự
+    db.query(
+        "UPDATE NguoiDung SET VaiTro='cansu' WHERE MaNguoiDung=?",
+        [MaNguoiDung],
+        (errUpdate) => {
+            if (errUpdate) return res.status(500).json({ message: 'Lỗi cập nhật VaiTro.', error: errUpdate.message });
+            db.query(
+                'SELECT * FROM ThanhVienLop WHERE MaLop=? AND MaNguoiDung=?',
+                [MaLop, MaNguoiDung],
+                (err, rows) => {
+                    if (err) return res.status(500).json({ message: 'Lỗi truy vấn.' });
+                    if (rows && rows.length > 0) {
+                        // Đã là thành viên, chỉ update LaCanSu
+                        db.query(
+                            'UPDATE ThanhVienLop SET LaCanSu=1 WHERE MaLop=? AND MaNguoiDung=?',
+                            [MaLop, MaNguoiDung],
+                            (err2) => {
+                                if (err2) return res.status(500).json({ message: 'Lỗi cập nhật cán sự.' });
+                                return res.json({ success: true, message: 'Cập nhật cán sự thành công.' });
+                            }
+                        );
+                    } else {
+                        // Chưa là thành viên, insert mới với LaCanSu=1
+                        db.query(
+                            'INSERT INTO ThanhVienLop (MaLop, MaNguoiDung, LaCanSu) VALUES (?, ?, 1)',
+                            [MaLop, MaNguoiDung],
+                            (err2) => {
+                                if (err2) return res.status(500).json({ message: 'Lỗi thêm cán sự vào lớp.' });
+                                return res.json({ success: true, message: 'Thêm cán sự vào lớp thành công.' });
+                            }
+                        );
+                    }
+                }
+            );
         }
     );
 };
